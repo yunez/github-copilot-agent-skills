@@ -49,7 +49,7 @@ Optional layout passes: `postLayout: "elk"`, `routing: "libavoid"`.
 
 ### Option B — stdio Tool Server (opens draw.io in browser)
 
-- MCP tools: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/search_shapes`, `drawio/list_pages`, `drawio/get_page`, `drawio/set_page`
+- MCP tools: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/open_drawio_csv`, `drawio/search_shapes`, `drawio/list_pages`, `drawio/get_page`, `drawio/set_page`
 - Workspace MCP config:
 
 ```json
@@ -63,7 +63,7 @@ Optional layout passes: `postLayout: "elk"`, `routing: "libavoid"`.
 }
 ```
 
-Supported inputs: XML, Mermaid.
+Supported inputs: XML, Mermaid, CSV.
 Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
 
 > Use **Option A** if your host supports MCP Apps inline rendering (Claude.ai, Cursor ≥ 2.6) or if the "Open in draw.io" button workflow is acceptable. Use **Option B** for VS Code / GitHub Copilot or any standard MCP client.
@@ -71,6 +71,10 @@ Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
 ### Azure icon discovery
 
 - MCP tool: `drawio/search_shapes` — search 10,000+ draw.io shapes and return ready-to-use style strings.
+
+### Tool name detection
+
+MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_create_diagram` and `mcp_drawio-mcp-ap_search_shapes`). If `tool_search` does not surface the drawio tools, inspect the available or deferred tools list and call the exact names shown there. Do not assume a tool is unavailable if it appears in the deferred list; use the exact registered name.
 
 ## Recommended Workflow
 

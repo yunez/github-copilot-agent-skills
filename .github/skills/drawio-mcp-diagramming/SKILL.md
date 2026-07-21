@@ -77,6 +77,10 @@ Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
 
 - MCP tool: `drawio/search_shapes` — search 10,000+ draw.io shapes and return ready-to-use style strings.
 
+### Tool name detection
+
+MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_create_diagram` and `mcp_drawio-mcp-ap_search_shapes`). If `tool_search` does not surface the drawio tools, inspect the available or deferred tools list and call the exact names shown there. Do not assume a tool is unavailable if it appears in the deferred list; use the exact registered name.
+
 ## Recommended Workflow
 
 1. **Identify the input format and cloud provider**
