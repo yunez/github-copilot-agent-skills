@@ -85,3 +85,96 @@ Complete example `mxGraphModel` XML for Azure and AWS infrastructure topology di
     vertex="1" parent="1"><mxGeometry x="20" y="20" width="240" height="110"/></mxCell>
 </mxGraphModel>
 ```
+
+---
+
+## Azure Topology Guidance
+
+### Canvas and zone sizing
+- Use `pageWidth="1900" pageHeight="1500"` for complex multi-VNet diagrams.
+
+### VNet and subnet styles
+
+| Element | Style |
+|---|---|
+| VNet (DMZ) | `fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=4;` |
+| VNet (Internal) | `fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=4;` |
+| VNet (Management) | `fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=4;` |
+| Subnet | `dashed=1;dashPattern=8 8;strokeWidth=2;` lighter shade of parent VNet colour |
+
+Label subnets with name + CIDR. For delegated subnets, add delegation note to label.
+
+### Traffic flow colour palette (Azure)
+
+| Traffic type | Colour | Style |
+|---|---|---|
+| HTTPS:443 internet ingress | `#0078D4` Azure blue | solid, `strokeWidth=3` |
+| HTTP:80/8080 backend | `#00897B` Teal | solid, `strokeWidth=2` |
+| Database (PostgreSQL:5432) | `#5C6BC0` Indigo | dashed, `strokeWidth=2` |
+| Storage (NFS/Gluster) | `#43A047` Green | solid, `strokeWidth=2` |
+| Management/Identity | `#F57C00` Amber | dashed, `strokeWidth=2` |
+| Denied/blocked | `#C62828` Red | solid — reserve exclusively for blocked traffic |
+
+### Essential annotation boxes (every Azure topology)
+1. **Network Isolation Explanation** — top-left, `fillColor=#fff9cc`: VNet/subnet conventions, NSG/DNS notes
+2. **Zone Separation** — VNet Peering zone (`fillColor=#f5f5f5`) + External Services zone (`fillColor=#ffe6cc`)
+
+### Topology checklist (Azure)
+- [ ] VNets have thick borders (strokeWidth=4)
+- [ ] Subnets have dashed borders (strokeWidth=2, dashPattern=8 8)
+- [ ] All resources positioned inside their subnets
+- [ ] Traffic arrows labelled with protocols and ports
+- [ ] Network isolation explanation box included
+- [ ] Color-coded zones for different purposes
+- [ ] Canvas 1900×1500 for complex infra
+- [ ] VNet peering connections shown in separate zone
+- [ ] External services grouped in separate zone
+- [ ] Animation preference confirmed before generating
+
+---
+
+## AWS Topology Guidance
+
+### VPC and subnet styles
+
+| Element | Style |
+|---|---|
+| VPC (Production) | `fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=4;` |
+| VPC (Development) | `fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=4;` |
+| VPC (Shared Services) | `fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=4;` |
+| Public subnet | `fillColor=#e6f4ea;strokeColor=#82b366;dashed=1;dashPattern=8 8;strokeWidth=2;` |
+| Private subnet | `fillColor=#EFF7FF;strokeColor=#6c8ebf;dashed=1;dashPattern=8 8;strokeWidth=2;` |
+| Isolated subnet (databases) | `fillColor=#fff3e0;strokeColor=#e6821e;dashed=1;dashPattern=8 8;strokeWidth=2;` |
+| AZ container | `fillColor=#f5f5f5;strokeColor=#999999;strokeWidth=1;` |
+
+Label subnets with name, AZ, and CIDR.
+
+### Resource placement rules (AWS)
+- Internet-facing (ALB, NAT Gateway, Bastion) → **public subnets**
+- Application servers / ECS tasks → **private subnets**
+- Databases (RDS, ElastiCache) → **isolated subnets** (no outbound internet)
+
+### Traffic flow colour palette (AWS)
+
+Same palette as Azure, plus:
+- HTTPS:443 to VPC Endpoints / AWS managed services: `#43A047` Green, solid
+- SSH:22 / SSM management: `#F57C00` Amber, dashed
+- Always show NAT Gateway path for private subnet → internet egress
+
+### Essential annotation boxes (every AWS topology)
+1. **Network Isolation Explanation** — top-left: VPC thick borders, subnet tiers, SG/NACL notes, VPC Endpoints
+2. **Zone Separation** — Internet/Edge zone (orange), VPC Peering/TGW zone (grey), AWS Managed Services zone (purple)
+
+### Topology checklist (AWS)
+- [ ] VPCs have thick borders (strokeWidth=4) colour-coded by environment
+- [ ] Subnets have dashed borders colour-coded by tier (public/private/isolated)
+- [ ] AZ containers group subnets per Availability Zone
+- [ ] All resources positioned inside their subnets
+- [ ] Internet Gateway and NAT Gateway shown
+- [ ] Traffic arrows labelled with protocols and ports
+- [ ] Security Group boundaries annotated where important
+- [ ] Network isolation explanation box included
+- [ ] Canvas 1900×1500 for complex infra
+- [ ] VPC Peering / Transit Gateway shown in separate zone
+- [ ] Edge/internet services (CloudFront, Route53, WAF) in separate zone
+- [ ] Animation preference confirmed before generating

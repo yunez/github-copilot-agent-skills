@@ -1,17 +1,11 @@
 ---
 name: drawio-mcp-diagramming
-description: Create and edit architecture diagrams using the Draw.io MCP server. Supports both the hosted App Server (`drawio/create_diagram`) and the stdio Tool Server (`drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/search_shapes`, etc.) with Azure2 and AWS4 icon rendering guidance. Supports XML, Mermaid, and CSV input. Uses `drawio/search_shapes` for icon discovery.
-metadata:
-  author: Thomas Thornton
-  version: "1.1.0"
-  last-updated: "2026-07-21"
+description: Create and edit diagrams using the Draw.io MCP server — any shape, any vendor. USE FOR: draw me a diagram, create an architecture diagram, add Azure/AWS/GCP/Cisco/Kubernetes icons to a diagram, convert Mermaid to draw.io, fix overlapping arrows, edit a .drawio file, network topology diagrams, CI/CD pipeline diagrams, auth flow diagrams. Supports XML, Mermaid, and CSV. Uses `drawio/search_shapes` to find any of 10,000+ shapes across all vendor and icon libraries. DO NOT USE FOR: Excalidraw output (use excalidraw-mcp-diagramming skill).
 ---
 
 # Draw.io MCP Diagramming Skill
 
-Use this skill to create or update diagrams through the Draw.io MCP server and to avoid common Azure and AWS icon rendering problems.
-
-See [references/REFERENCE.md](references/REFERENCE.md) for additional reference artifacts.
+Create or update diagrams via the Draw.io MCP server. Before generating XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) — hard constraints and edge routing rules that prevent the most common rendering failures. For layout anti-pattern fixes, see [references/layout-antipatterns.md](references/layout-antipatterns.md). For network topology styles and checklists (Azure VNets, AWS VPCs), see [references/topology-patterns.md](references/topology-patterns.md).
 
 For diagrams that use only basic shapes (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes), skip icon discovery and proceed directly to `drawio/create_diagram` or `drawio/open_drawio_mermaid`.
 
@@ -175,121 +169,11 @@ For worked examples of common layout problems (stacked edges, repeated labels, o
 
 ## Professional Network Topology Patterns (Azure Infrastructure)
 
-When creating **Azure infrastructure network diagrams** with VNets, subnets, and network isolation:
-
-### Canvas Sizing
-- Use larger canvas for complex infrastructure: `pageWidth="1900" pageHeight="1500"`
-- Standard canvas may be too small for multi-VNet topologies
-
-### VNet and Subnet Visualization
-- **VNets**: Use thick borders (`strokeWidth=4`) and large containers
-  - DMZ VNet: Yellow (`fillColor=#fff2cc`, `strokeColor=#d6b656`)
-  - Internal VNet: Green (`fillColor=#d5e8d4`, `strokeColor=#82b366`)
-  - Management Zone: Blue (`fillColor=#dae8fc`, `strokeColor=#6c8ebf`)
-- **Subnets**: Use dashed borders (`strokeWidth=2`, `dashed=1`, `dashPattern=8 8`)
-  - Position subnet containers **inside** VNet containers
-  - Use lighter shades of parent VNet color
-  - Label with subnet name and CIDR (e.g., "Application Subnet - 10.x.2.0/24")
-- **Delegated Subnets**: Add delegation info to label (e.g., "PostgreSQL Subnet - 10.x.4.0/24 (Delegated to Microsoft.DBforPostgreSQL/flexibleServers)")
-
-### Resource Positioning
-- Position all resources **inside their respective subnet containers**
-- VMs, databases, load balancers must be visually contained within their subnets
-- This clearly shows network isolation boundaries
-
-### Traffic Flow Visualization
-- **Label all traffic arrows** with protocols and ports, using this colour palette:
-  - HTTPS:443 — **Azure blue** (`#0078D4`, thick solid) for internet ingress; prominent but professional
-  - HTTP:80/8080/8090/8095 — **Teal** (`#00897B`, solid) for backend pool traffic; signals allowed/healthy east-west flow
-  - PostgreSQL:5432 — **Indigo** (`#5C6BC0`, dashed) for database connections; purple/indigo conventionally marks the data tier
-  - NFS/Gluster — **Green** (`#43A047`, solid) for shared storage flows
-  - RBAC/Identity/SMTP — **Amber** (`#F57C00`, dashed) for management/control-plane traffic
-  - Denied/Blocked (WAF, NSG deny rules) — **Red** (`#C62828`) — reserve red exclusively for blocked or denied traffic
-- Use `edgeStyle=orthogonalEdgeStyle` for clean routing
-- Include `<Array>` waypoints for complex routing
-- **Direction animation on key edges**: `flowAnimation=1;` adds a moving dot along a connector arrow, making ingress paths, egress routes, and replication flows readable at a glance — the effect renders in SVG export and draw.io desktop and works on any edge style. Before generating the diagram, ask the user: *"Would you like any of the traffic arrows animated to show flow direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges they identify. Example style for an animated internet ingress arrow: `style="edgeStyle=orthogonalEdgeStyle;flowAnimation=1;strokeWidth=3;strokeColor=#0078D4;"`
-
-### Essential Components
-
-Include two annotation boxes in every Azure topology diagram:
-1. **Network Isolation Explanation** (top-left, `fillColor=#fff9cc`) — visual conventions: VNet thick borders, subnet dashed borders, NSG/DNS notes
-2. **Zone Separation** — VNet Peering zone (grey `fillColor=#f5f5f5`) and External Services zone (orange `fillColor=#ffe6cc`)
-
-For a complete example, see [references/topology-patterns.md](references/topology-patterns.md).
-
-### Professional Topology Checklist (Azure)
-- [ ] VNets have thick borders (strokeWidth=4)
-- [ ] Subnets have dashed borders (strokeWidth=2, dashPattern=8 8)
-- [ ] All resources positioned inside their subnets
-- [ ] Traffic arrows labelled with protocols and ports using the standard colour palette
-- [ ] Network isolation explanation box included
-- [ ] Color-coded zones for different purposes
-- [ ] Canvas sized appropriately (1900x1500 for complex infra)
-- [ ] VNet peering connections shown in separate zone
-- [ ] External services grouped in separate zone
-- [ ] Animation preference confirmed with user before generating (*"Would you like any flow arrows animated? If so, which ones?"*)
+Read [references/topology-patterns.md](references/topology-patterns.md) for all Azure topology guidance — load it for any diagram involving VNets, subnets, or network isolation. It covers VNet/subnet border styles and colours, traffic flow colour palette, resource positioning rules, required annotation boxes, and the Azure topology checklist.
 
 ## Professional Network Topology Patterns (AWS Infrastructure)
 
-When creating **AWS infrastructure network diagrams** with VPCs, subnets, and network isolation:
-
-### Canvas Sizing
-- Use larger canvas for complex infrastructure: `pageWidth="1900" pageHeight="1500"`
-- Standard canvas may be too small for multi-VPC/multi-account topologies
-
-### VPC and Subnet Visualization
-- **VPCs**: Use thick borders (`strokeWidth=4`) and large containers
-  - Production VPC: Green (`fillColor=#d5e8d4`, `strokeColor=#82b366`)
-  - Development VPC: Blue (`fillColor=#dae8fc`, `strokeColor=#6c8ebf`)
-  - Shared Services VPC: Yellow (`fillColor=#fff2cc`, `strokeColor=#d6b656`)
-- **Subnets**: Use dashed borders (`strokeWidth=2`, `dashed=1`, `dashPattern=8 8`)
-  - Public Subnets: Light green (`fillColor=#e6f4ea`, `strokeColor=#82b366`)
-  - Private Subnets: Light blue (`fillColor=#EFF7FF`, `strokeColor=#6c8ebf`)
-  - Isolated Subnets (databases): Light orange (`fillColor=#fff3e0`, `strokeColor=#e6821e`)
-  - Position subnet containers **inside** VPC containers
-  - Label with subnet name, AZ, and CIDR (e.g., "Public Subnet A - us-east-1a - 10.x.1.0/24")
-- **Availability Zones**: Use light grey container inside VPC to group subnets per AZ
-
-### Resource Positioning
-- Position all resources **inside their respective subnet containers**
-- EC2 instances, RDS, Lambda, etc. must be visually contained within their subnets
-- Internet-facing resources (ALB, NAT Gateway, Bastion) go in **public subnets**
-- Application servers / ECS tasks go in **private subnets**
-- Databases (RDS, ElastiCache) go in **isolated subnets** with no outbound internet
-
-### Traffic Flow Visualization
-- **Label all traffic arrows** with protocols and ports, using the same colour palette as Azure:
-  - HTTPS:443 *(internet ingress)* — **Azure blue** (`#0078D4`, thick solid) for external traffic entering via ALB/CloudFront
-  - HTTP:80→HTTPS redirect — **Teal** (`#00897B`, solid) for healthy/redirected traffic
-  - Port 5432/3306 — **Indigo** (`#5C6BC0`, dashed) for database connections
-  - HTTPS:443 *(internal AWS service calls)* — **Green** (`#43A047`, solid) for traffic to VPC Endpoints and AWS-managed services (S3, SSM, Secrets Manager, etc.)
-  - SSH:22 / SSM — **Amber** (`#F57C00`, dashed) for management / Bastion access
-  - Denied/Blocked (WAF, Security Group deny rules) — **Red** (`#C62828`) — reserve red exclusively for blocked traffic
-- Use `edgeStyle=orthogonalEdgeStyle` for clean routing
-- Show NAT Gateway path for private subnet → internet egress
-- **Direction animation on key edges**: `flowAnimation=1;` adds a moving dot along a connector arrow, making ingress paths, egress routes, and data-transfer flows readable at a glance — the effect renders in SVG export and draw.io desktop and can be applied to any edge style. Before generating the diagram, ask the user: *"Would you like any of the traffic arrows animated to show flow direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges they identify. Example style for an animated ingress path: `style="edgeStyle=orthogonalEdgeStyle;flowAnimation=1;strokeWidth=3;strokeColor=#0078D4;"`
-
-### Essential Components
-
-Include two annotation boxes in every AWS topology diagram:
-1. **Network Isolation Explanation** (top-left) — visual conventions: VPC thick borders, subnet tiers (public/private/isolated), SG/NACL notes, VPC Endpoints
-2. **Zone Separation** — Internet/Edge zone (orange), VPC Peering/Transit Gateway zone (grey), AWS Managed Services zone (purple)
-
-For a complete example, see [references/topology-patterns.md](references/topology-patterns.md).
-
-### Professional Topology Checklist (AWS)
-- [ ] VPCs have thick borders (strokeWidth=4) and are colour-coded by environment
-- [ ] Subnets have dashed borders (strokeWidth=2, dashPattern=8 8) and are colour-coded by tier (public/private/isolated)
-- [ ] Availability Zone containers group subnets per AZ
-- [ ] All resources positioned inside their respective subnets
-- [ ] Internet Gateway and NAT Gateway shown for public/private egress
-- [ ] Traffic arrows labelled with protocols and ports using the standard colour palette
-- [ ] Security Group boundaries annotated where important
-- [ ] Network isolation explanation box included
-- [ ] Canvas sized appropriately (1900x1500 for complex infra)
-- [ ] VPC Peering / Transit Gateway shown in separate zone
-- [ ] Edge/internet services (CloudFront, Route53, WAF) in separate zone
-- [ ] Animation preference confirmed with user before generating (*"Would you like any flow arrows animated? If so, which ones?"*)
+Read [references/topology-patterns.md](references/topology-patterns.md) for all AWS topology guidance — load it for any diagram involving VPCs, subnets, or network isolation. It covers VPC/subnet styles, AZ containers, public/private/isolated subnet colour coding, NAT Gateway egress paths, and the AWS topology checklist.
 
 ## Sequence and Flow Diagram Patterns
 
@@ -368,22 +252,13 @@ Use this section for diagrams that show **temporal flows** — what happens in o
 - [ ] Animation preference confirmed with user before generating
 - [ ] Canvas sized appropriately for participant count and step depth
 
-## Icon Reference Assets (Azure Diagrams)
+## Icon Discovery: Hard Gate and Fallback
 
-This section applies only when the diagram includes Azure services/icons.
+This applies to all shapes — cloud services, network equipment, brand logos, and any pictorial icon.
 
-1. **Use `drawio/search_shapes`**
-   - Search for the service by name and use the returned style string directly.
-   - Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
-   - This is the upstream-recommended path and covers all 10,000+ shapes.
-
-2. **Hard gate**
-   - If an icon style string cannot be confirmed via `drawio/search_shapes`, do **not** use it.
-   - Find an alternative via `drawio/search_shapes` first.
-
-3. **Render review fallback**
-   - If diagram review shows wrong/missing icon rendering, use `drawio/search_shapes` for alternative style strings.
-   - Substitute and regenerate the diagram.
+1. **`drawio/search_shapes` is the only accepted source** — do not guess or fabricate style strings.
+2. If a style string cannot be confirmed, find an alternative via `drawio/search_shapes` before generating.
+3. If a shape renders incorrectly, use `drawio/search_shapes` for an alternative, substitute, and regenerate.
 
 ## Azure Icon Caveats (Important)
 
@@ -404,25 +279,6 @@ Path pattern: `image=img/lib/mscae/<Icon_Name>.svg`
 - Correct style prefix: `image;sketch=0;aspect=fixed;html=1;points=[];align=center;...`
 - Common mscae icons: `Azure_Sentinel.svg`, `DNS_Private_Zones.svg`.
 - If `drawio/search_shapes` returns a style containing `sketch=0`, the icon is from mscae — preserve that attribute.
-
-## Icon Reference Assets (AWS Diagrams)
-
-This section applies only when the diagram includes AWS services/icons.
-
-> **Important difference from Azure**: AWS4 icons in draw.io are **stencil-based**, not individual SVG files. They are typically referenced using `shape=mxgraph.aws4.<name>`. `drawio/search_shapes` returns the correct style string, including fill colours.
-
-1. **Use `drawio/search_shapes`**
-   - Search for the service by name and use the returned style string directly.
-   - Example queries: `"aws lambda"`, `"aws s3"`, `"aws ec2"`, `"aws rds"`.
-   - This is the upstream-recommended path and covers all 10,000+ shapes.
-
-2. **Hard gate**
-   - If a shape style string cannot be confirmed via `drawio/search_shapes`, do **not** use it.
-   - Find an alternative via `drawio/search_shapes` first.
-
-3. **Render review fallback**
-   - If diagram review shows wrong/missing shape rendering, use `drawio/search_shapes` for alternative style strings.
-   - Substitute and regenerate the diagram.
 
 ## AWS Icon Caveats (Important)
 

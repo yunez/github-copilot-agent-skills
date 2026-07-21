@@ -1,16 +1,12 @@
-# Draw.io Azure2 & AWS4 References
+# Draw.io MCP Diagramming — Reference Index
 
 This folder contains reference artifacts for the `drawio-mcp-diagramming` skill.
 
-## Icon Discovery
+## Shape Discovery
 
-The primary way to find Azure2 and AWS4 icons is the MCP tool:
+Use `drawio/search_shapes` for any shape with a name, brand, or product identity — cloud services (Azure, AWS, GCP), network equipment (Cisco, Juniper), containers (Kubernetes, Docker), brand logos, IT infrastructure shapes, and more. It covers all 10,000+ draw.io library shapes and returns ready-to-use style strings.
 
-- `drawio/search_shapes` — search 10,000+ draw.io shapes and return exact style strings.
-- Example Azure queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`.
-- Example AWS queries: `"aws lambda"`, `"aws s3"`, `"aws ec2"`, `"aws rds"`.
-
-Use the returned `style` value directly in the XML `mxCell`. Do not use unconfirmed icon paths.
+Never guess or fabricate a style string. If `drawio/search_shapes` cannot confirm a style, find an alternative before generating.
 
 ## Reference Files
 
