@@ -76,17 +76,21 @@ Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
 
 MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_create_diagram` and `mcp_drawio-mcp-ap_search_shapes`). If `tool_search` does not surface the drawio tools, inspect the available or deferred tools list and call the exact names shown there. Do not assume a tool is unavailable if it appears in the deferred list; use the exact registered name.
 
+> XML hard constraints, edge density rules, and VS Code sequential-search guidance are maintained in the generic `drawio-mcp-diagramming` skill's [references/xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md). Apply those rules for all Azure diagram XML.
+
 ## Recommended Workflow
 
 1. **Identify the input format**
-   - For simple Azure flowcharts, sequence diagrams, or ER diagrams: prefer **Mermaid** if the Tool Server is available.
+   - For Azure flowcharts, sequence diagrams, or ER diagrams: prefer **Mermaid** if the Tool Server is available.
    - For precise Azure architecture diagrams with official icons: use **XML**.
 
-2. **Discover Azure icons with `drawio/search_shapes`**
+2. **Discover Azure icons with `drawio/search_shapes`** — run searches **one at a time** (sequential, not parallel).
    - Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
    - Use the returned style string directly in the XML cell.
 
-3. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see section below):
+3. **Before writing edge XML**, apply the edge density rules from [drawio-mcp-diagramming/references/xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md): assign exit/entry points on busy nodes, consolidate fan-outs, add cross-zone waypoints.
+
+4. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see section below):
    - Use larger canvas (1900x1500)
    - VNets with thick borders (strokeWidth=4)
    - Subnets with dashed borders (strokeWidth=2, dashPattern=8 8)
@@ -94,22 +98,20 @@ MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_creat
    - Label all traffic flows with protocols/ports
    - Include traffic legend and network isolation explanation boxes
 
-4. Build a valid `mxGraphModel` payload using verified icons/style strings.
+5. Build a valid `mxGraphModel` payload — no XML comments, unique IDs, valid edge references. See [xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md).
 
-5. **Call the appropriate tool**
+6. **Call the appropriate tool**
    - App Server: `drawio/create_diagram` with `xml` or `mermaid`.
    - Tool Server: `drawio/open_drawio_xml` or `drawio/open_drawio_mermaid`.
 
-6. **Apply layout passes when useful**
+7. **Apply layout passes when useful**
    - App Server: `postLayout: "elk"` for a full re-layout, or `routing: "libavoid"` to tidy connectors while keeping your positions.
    - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
    - Do **not** combine `postLayout` and `routing`.
 
-7. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
+8. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
 
-8. Keep labels concise and explicit (service name + role).
-
-9. For Azure diagrams, prefer one icon per major service and use edges for flow semantics (ingress/egress/peering/telemetry).
+9. Prefer one icon per major Azure service; use edges for flow semantics (ingress/egress/peering/telemetry).
 
 ## Input Format Quick Reference
 

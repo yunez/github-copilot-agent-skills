@@ -81,20 +81,32 @@ Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
 
 MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_create_diagram` and `mcp_drawio-mcp-ap_search_shapes`). If `tool_search` does not surface the drawio tools, inspect the available or deferred tools list and call the exact names shown there. Do not assume a tool is unavailable if it appears in the deferred list; use the exact registered name.
 
+### VS Code / GitHub Copilot: run shape searches sequentially
+
+In VS Code and GitHub Copilot, parallel tool calls are cancelled if the user sends a new message while they are in flight. Always run `drawio/search_shapes` calls **one at a time** — never in parallel batches.
+
+### XML hard constraints and edge routing rules
+
+The draw.io MCP server enforces strict XML rules and generated diagrams frequently suffer from overlapping arrows. Before generating any XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) which covers:
+
+- **Hard constraints** — forbidden constructs that cause the server to return a render error (XML comments, duplicate IDs, self-closing geometry with children, unescaped characters)
+- **Edge density rules** — max edges per node, fan-out consolidation, exit/entry connection points, cross-zone waypoints
+- **Pre-generation edge checklist** — run before writing edge XML for any infrastructure diagram
+
 ## Recommended Workflow
 
-1. **Identify the input format and cloud provider**
+1. **Identify the input format and diagram type**
    - For flowcharts, sequence diagrams, ERD, mind maps, Gantt, timelines, kanban: prefer **Mermaid** if the Tool Server is available, or use the App Server's `mermaid` parameter.
    - For org charts or flowcharts from tabular data: use **CSV** with the Tool Server (`drawio/open_drawio_csv`).
-   - For precise cloud architecture diagrams with official icons: use **XML** (`drawio/create_diagram` or `drawio/open_drawio_xml`).
-   - Determine whether the diagram uses Azure, AWS, or both.
+   - For diagrams with named services, vendor shapes, or pictorial icons: use **XML** (`drawio/create_diagram` or `drawio/open_drawio_xml`).
 
-2. **Discover icons with `drawio/search_shapes`** — it searches all 10,000+ shapes and returns exact style strings.
-   - Example queries: `"azure virtual machine"`, `"aws lambda"`, `"gcp compute engine"`, `"cisco router"`, `"kubernetes pod"`.
-   - Use the returned style string directly in the XML cell.
-   - Skip `search_shapes` for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps) that only need rectangles, diamonds, circles, and arrows.
+2. **Use `drawio/search_shapes` for any non-geometric shape** — it searches all 10,000+ shapes across every draw.io library and returns ready-to-use style strings.
+   - Use it for cloud services (Azure, AWS, GCP), network equipment (Cisco, Juniper), container/orchestration tools (Kubernetes, Docker), brand logos (Slack, GitHub), IT infrastructure shapes, and any other named component.
+   - Example queries: `"azure virtual machine"`, `"aws lambda"`, `"cisco router"`, `"kubernetes pod"`, `"slack"`, `"docker"`.
+   - Use the returned style string directly in the XML cell — do not guess or fabricate style strings.
+   - Skip `search_shapes` only for diagrams that use purely geometric shapes: rectangles, diamonds, circles, and arrows.
 
-4. **Skip icon lookup only for standard geometric diagrams** — flowcharts, UML, ERD, org charts, mind maps, timelines, and wireframes that need only rectangles, diamonds, circles, and arrows. For any cloud, vendor, or branded diagram (Azure, AWS, GCP, Kubernetes, Cisco, brand logos, etc.), use `drawio/search_shapes` to find the correct icon style string. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
+4. **When to use `search_shapes` vs skip it** — if a shape has a recognised name, brand, or product identity, always look it up via `search_shapes` first. Only skip it for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes) that need no pictorial icons. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
 
 5. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see Azure section below):
    - Use larger canvas (1900x1500)
@@ -122,15 +134,16 @@ MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_creat
    - Tool Server: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, or `drawio/open_drawio_csv`.
 
 9. **Apply layout passes when useful**
-   - App Server: `postLayout: "elk"` for a full re-layout, or `routing: "libavoid"` to tidy connectors while keeping your positions.
+   - App Server: `postLayout: "elk"` for a full re-layout (moves nodes + routes edges), or `routing: "libavoid"` to improve edge paths **while keeping your manual node positions**.
    - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
    - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges.
+   - `routing: "libavoid"` does **not** separate same-source stacked edges. If multiple edges leave the same node at the same point, assign `exitX`/`exitY` values first — the layout pass is a finishing step, not a substitute.
 
 10. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
 
 11. Keep labels concise and explicit (service name + role).
 
-12. For cloud-specific diagrams, prefer one icon per major service and use edges for flow semantics (ingress/egress/peering/telemetry).
+12. Prefer one icon per major component or service; use edges for flow semantics (ingress/egress/dependency/telemetry).
 
 ## Input Format Quick Reference
 
@@ -138,21 +151,22 @@ Choose the input that matches the diagram type and configured server.
 
 | Input | Best for | App Server | Tool Server |
 |---|---|---|---|
-| **XML** | Precise cloud architectures, custom layouts, network topology | `drawio/create_diagram` with `xml` | `drawio/open_drawio_xml` |
+| **XML** | Architecture/topology diagrams with vendor or pictorial icons, custom layouts | `drawio/create_diagram` with `xml` | `drawio/open_drawio_xml` |
 | **Mermaid** | Flowcharts, sequence, class, ER, state, mindmap, Gantt, timeline, kanban | `drawio/create_diagram` with `mermaid` | `drawio/open_drawio_mermaid` |
 | **CSV** | Org charts, flowcharts, simple diagrams from tabular data | Not supported | `drawio/open_drawio_csv` |
 
-Use Mermaid for standard diagram types; use XML when the user needs official cloud icons, precise positioning, complex containers, or custom styling. See [references/REFERENCE.md](references/REFERENCE.md) for Mermaid/CSV examples and multi-page editing details.
+Use Mermaid for standard diagram types; use XML when the user needs pictorial or vendor-specific icons, precise positioning, complex containers, or custom styling. See [references/REFERENCE.md](references/REFERENCE.md) for Mermaid/CSV examples and multi-page editing details.
 
 ## Visual Quality Guardrails
 
 Apply these defaults unless the user explicitly asks for a dense/technical view:
 
-- Use 3-4 major lanes/zones max (for example Source, Pipeline, Cloud target).
+- Use 3-4 major lanes/zones max (for example Source → Process → Destination).
 - Keep primary flow left-to-right with a single main path.
 - Use stage numbering (`1`, `2`, `3`, `4`) instead of many edge labels.
-- Keep one icon per major service; avoid icon-per-step layouts.
+- Keep one icon per major component; avoid icon-per-step layouts.
 - Limit cross-lane dashed lines to one security/auth line and one optional telemetry line.
+- **Edge density**: nodes with 3+ outgoing edges must use `exitX`/`exitY` connection points to fan them out. Fan-out to same-tier targets (e.g. one gateway → 3 backends, same protocol) should use one aggregated edge not separate identical arrows. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md) for exit-point values and consolidation patterns.
 - Keep text concise (single purpose per box) and avoid multiline overload.
 - **Animated flow on connectors**: adding `flowAnimation=1;` to any edge style renders a moving dot that travels along the arrow, making directional flow immediately visible without extra labels — ideal for data-flow and pipeline diagrams. The animation is preserved in SVG export and the draw.io desktop app. By default, ask the user whether they want any flow arrows animated before generating the diagram — *"Would you like any of the flow arrows animated to show traffic direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges the user identifies. If the user has already indicated they want a static/clean diagram, skip the question.
 - Prefer a "clean" variant first; add detail only if requested.
@@ -279,7 +293,7 @@ For a complete example, see [references/topology-patterns.md](references/topolog
 
 ## Sequence and Flow Diagram Patterns
 
-Use this section for diagrams that show **temporal flows** — what happens in order — rather than infrastructure topology. No cloud icon catalog lookup is required.
+Use this section for diagrams that show **temporal flows** — what happens in order — rather than infrastructure topology. No shape lookup via `drawio/search_shapes` is required.
 
 ### When to Apply
 
@@ -326,7 +340,7 @@ Use this section for diagrams that show **temporal flows** — what happens in o
 | Identity provider (Entra, Cognito, Okta) | `#e6f4ea` | `#82b366` |
 | API / backend service | `#fff3e0` | `#e6821e` |
 | Database / data store | `#f5f5f5` | `#666666` |
-| Cloud managed service (Key Vault, S3, etc.) | `#f3e5f5` | `#7B1FA2` |
+| Managed service / external system | `#f3e5f5` | `#7B1FA2` |
 
 **Stage fill colours** (CI/CD pipeline):
 
@@ -373,16 +387,23 @@ This section applies only when the diagram includes Azure services/icons.
 
 ## Azure Icon Caveats (Important)
 
-Azure icon rendering in draw.io can fail for two common reasons:
+Azure icons come from **two separate libraries**. `drawio/search_shapes` will return icons from either; use the style string exactly as returned.
 
-1. **Wrong style type**
-   - `shape=mxgraph.azure2.*` may not render in some hosts.
-   - Prefer Azure2 image style entries:
-   - `image;aspect=fixed;html=1;...;image=img/lib/azure2/<category>/<Icon_Name>.svg;`
+### azure2 library (most Azure services)
 
-2. **Library/environment mismatch**
-   - Some embedded viewers/extensions do not resolve `img/lib/azure2/...` consistently.
-   - If icons do not render in one host, test in `app.diagrams.net`.
+Path pattern: `image=img/lib/azure2/<category>/<Icon_Name>.svg`
+
+- `shape=mxgraph.azure2.*` may not render in some hosts. Prefer the `image;aspect=fixed;...` style form.
+- Some embedded viewers do not resolve `img/lib/azure2/...` consistently — test in `app.diagrams.net` if icons are missing.
+
+### mscae library (Sentinel, DNS Private Zones, and some older icons)
+
+Path pattern: `image=img/lib/mscae/<Icon_Name>.svg`
+
+- Icons from this library **must include `sketch=0`** in their style. Without it the shape renders with a hand-drawn sketch effect.
+- Correct style prefix: `image;sketch=0;aspect=fixed;html=1;points=[];align=center;...`
+- Common mscae icons: `Azure_Sentinel.svg`, `DNS_Private_Zones.svg`.
+- If `drawio/search_shapes` returns a style containing `sketch=0`, the icon is from mscae — preserve that attribute.
 
 ## Icon Reference Assets (AWS Diagrams)
 
@@ -423,34 +444,44 @@ AWS4 icon rendering in draw.io can fail for two common reasons:
    - Some embedded viewers may not load the `mxgraph.aws4` stencil library.
    - If shapes do not render in VS Code, test in `app.diagrams.net`.
 
-## How to Discover Icons
+## How to Discover Shapes
 
-Use `drawio/search_shapes` for cloud, branded, or pictorial icons. It returns exact style strings ready to paste into XML.
+`drawio/search_shapes` searches all 10,000+ shapes across every draw.io library and returns ready-to-use style strings. Use it for **any** shape that has a name, brand, or product identity — not just cloud providers.
 
-- **Azure**: query `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`.
-- **AWS**: query `"aws lambda"`, `"aws s3"`, `"aws ec2"`.
-- **GCP**: query `"gcp compute engine"`, `"gcp cloud storage"`, `"gcp cloud sql"`.
-- **Other**: query `"cisco router"`, `"kubernetes pod"`, `"react"`, `"slack"`.
+Example queries by category:
 
-Use the returned `style` value directly on the `mxCell`.
+| Category | Example queries |
+|---|---|
+| Azure | `"azure virtual machine"`, `"azure key vault"`, `"azure api management"` |
+| AWS | `"aws lambda"`, `"aws s3"`, `"aws ec2"` |
+| GCP | `"gcp compute engine"`, `"gcp cloud storage"` |
+| Network equipment | `"cisco router"`, `"cisco firewall"`, `"juniper switch"` |
+| Containers / orchestration | `"kubernetes pod"`, `"docker"`, `"helm"` |
+| Brands / SaaS | `"slack"`, `"github"`, `"jira"`, `"salesforce"` |
+| On-premises / IT | `"server"`, `"database"`, `"laptop"`, `"printer"` |
 
-For Azure2 image-style icons, the result typically looks like:
+Always use the returned `style` value directly on the `mxCell` — never guess or fabricate a style string.
+
+The style format varies by library:
+
 ```text
-image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/<category>/<Icon_Name>.svg;
+# Image-based (Azure azure2, SVG files)
+image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/<category>/<Name>.svg;
+
+# Stencil-based (AWS4, shape library)
+shape=mxgraph.aws4.<name>;fillColor=<color>;fontColor=#ffffff;strokeColor=none;
+
+# Stencil-based (Cisco, Kubernetes, etc.)
+shape=mxgraph.cisco.<category>.<name>;sketch=0;html=1;
 ```
 
-For AWS4 stencil icons, the result typically looks like:
-```text
-shape=mxgraph.aws4.<shape_name>;fillColor=<service_color>;fontColor=#ffffff;strokeColor=none;
-```
+## Fallback Strategy if Shapes Still Fail
 
-## Fallback Strategy if Icons Still Fail
+If any shapes do not render correctly:
 
-If Azure or AWS icons still do not render:
-
-- Do **not** generate the diagram with an unresolved icon set.
-- Use `drawio/search_shapes` to find alternative exact style strings.
-- Return the missing icon list and propose verified replacements.
+- Do **not** generate the diagram with an unresolved shape style.
+- Use `drawio/search_shapes` to find alternative verified style strings.
+- Return the list of unresolved shapes and propose verified replacements.
 - After replacements validate to `OK`, then generate the diagram.
 
 ## Exporting Diagrams
@@ -468,7 +499,12 @@ If Azure or AWS icons still do not render:
 
 - Confirm the configured MCP server appears in `MCP: List Servers`.
 - Run `MCP: Reset Cached Tools` if tool list is stale.
-- Ensure XML is well-formed (no malformed tags or invalid comments).
+- **XML comments (`<!-- -->`) are forbidden** — the MCP server rejects them. Remove all comments before submitting.
+- Ensure XML is otherwise well-formed (no malformed tags, no duplicate IDs, no unescaped `<`/`>`/`&` in style strings).
+- **Z-order**: zone background rectangles must be defined **before** the icons they contain, or they will render on top of icons.
+- **`html=1` in style** is required for any cell whose `value` contains HTML tags (`<b>`, `<br>`, `<i>`). Newlines via `&#xa;` work without it.
+- **`sketch=0` in search results**: if `drawio/search_shapes` returns a style string containing `sketch=0`, preserve it exactly — omitting it enables the hand-drawn sketch rendering mode for that shape.
+- **Icon sizes**: use dimensions as returned by `search_shapes`; they reflect the intended aspect ratio. When normalising a row of icons for visual consistency, 64×64 is a safe common size. Never change the aspect ratio of an icon that has `aspect=fixed` in its style.
 - **Azure**: Verify style uses `image=img/lib/azure2/...` for Azure2 icon mode.
 - **AWS**: Verify style uses `shape=mxgraph.aws4.<name>` for AWS4 icon mode (not `image=img/lib/aws4/...`).
 - Reopen diagram in web draw.io if VS Code extension rendering differs.
@@ -483,10 +519,11 @@ See [references/REFERENCE.md](references/REFERENCE.md) for diagram-type prompt p
 - The correct input format and MCP tool were chosen (XML, Mermaid, or CSV; App Server or Tool Server).
 - All icon/style strings confirmed via `drawio/search_shapes` before generating; unconfirmed icons are not used.
 - Diagram renders correctly; XML/Mermaid/CSV is valid and opens in draw.io.
-- Cloud resources identifiable via correct icons and clear labels.
+- All named components identifiable via correct icons and clear labels.
 - Layout passes applied appropriately (`postLayout: "elk"` and/or `routing: "libavoid"` for App Server; `routing: "libavoid"` for Tool Server `open_drawio_xml`).
 - All applicable topology checklist items passed (borders, subnets, traffic labels, legend, isolation box, zones, canvas size).
 - All applicable sequence/flow checklist items passed (numbered steps, colour-coded edges, error paths, canvas size).
 - Animation preference confirmed; `flowAnimation=1;` applied only to user-identified edges.
 - File artifact saved as `.drawio` (wrapped in `<mxfile>`) if requested.
+- Edge density rules applied: nodes with 3+ edges use distinct exit/entry points; fan-out consolidated; cross-zone edges have waypoints. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md).
 - Layout anti-patterns checked against [references/layout-antipatterns.md](references/layout-antipatterns.md) before finalising.
