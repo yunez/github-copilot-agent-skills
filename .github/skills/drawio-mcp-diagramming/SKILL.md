@@ -1,35 +1,42 @@
 ---
 name: drawio-mcp-diagramming
-description: Create and edit architecture diagrams using Draw.io MCP (`drawio/create_diagram`) with reliable Azure and AWS icon rendering guidance and troubleshooting. Supports Azure2 and AWS4 icon libraries. Requires Python 3 and internet access to refresh icon catalogs (periodic, not per-run).
+description: Create and edit architecture diagrams using the Draw.io MCP server. Supports both the hosted App Server (`drawio/create_diagram`) and the stdio Tool Server (`drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/search_shapes`, etc.) with Azure2 and AWS4 icon rendering guidance. Supports XML, Mermaid, and CSV input. Uses `drawio/search_shapes` for icon discovery.
 metadata:
   author: Thomas Thornton
-  version: "1.0.0"
-  last-updated: "2026-05-19"
+  version: "1.1.0"
+  last-updated: "2026-07-21"
 ---
 
 # Draw.io MCP Diagramming Skill
 
-Use this skill to create or update diagrams through the Draw.io MCP tool and to avoid common Azure and AWS icon rendering problems.
+Use this skill to create or update diagrams through the Draw.io MCP server and to avoid common Azure and AWS icon rendering problems.
 
-See [references/REFERENCE.md](references/REFERENCE.md) for reference artifacts and refresh commands.
+See [references/REFERENCE.md](references/REFERENCE.md) for additional reference artifacts.
 
-For non-Azure/non-AWS diagrams, you can skip icon discovery/validation scripts and proceed directly to `drawio/create_diagram`.
+For diagrams that use only basic shapes (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes), skip icon discovery and proceed directly to `drawio/create_diagram` or `drawio/open_drawio_mermaid`.
 
 ## When to Use
 
-- The user asks to create or refine architecture diagrams (Azure, AWS, or multi-cloud).
+- The user asks to create or refine architecture diagrams (Azure, AWS, multi-cloud, or generic).
 - The user wants draw.io/diagrams.net output from an MCP workflow.
+- The user asks for **Mermaid → draw.io** conversion.
+- The user asks for **CSV → draw.io** conversion (org charts, flowcharts from tabular data).
 - The user needs Azure service icons in diagrams.
 - The user needs AWS service icons in diagrams.
 - The user reports that Azure or AWS icons/shapes are not appearing.
 - The user asks for an **auth or identity flow** (OAuth 2.0, OIDC, JWT validation, SSO, login, token exchange, Entra, Cognito).
 - The user asks for an **API or microservice interaction diagram** (request/response chain, service-to-service calls, API gateway flow).
 - The user asks for a **CI/CD pipeline or deployment workflow** (build, test, deploy stages, GitHub Actions, Azure DevOps, approval gates).
+- The user wants to **edit an existing multi-page `.drawio` file** (Tool Server only).
 
 ## Required Tooling
 
+Draw.io provides two MCP server variants. The skill works with either; call the tools that match the configured server.
+
+### Option A — Hosted App Server (inline / "Open in draw.io" button)
+
 - MCP tool: `drawio/create_diagram`
-- Workspace MCP config should include a `drawio` server:
+- Workspace MCP config:
 
 ```json
 {
@@ -42,33 +49,96 @@ For non-Azure/non-AWS diagrams, you can skip icon discovery/validation scripts a
 }
 ```
 
+Supported inputs: `xml` (draw.io XML), `mermaid` (Mermaid.js text).
+Optional layout passes: `postLayout: "elk"`, `routing: "libavoid"`.
+
+### Option B — stdio Tool Server (opens draw.io in browser)
+
+- MCP tools: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/open_drawio_csv`, `drawio/search_shapes`, `drawio/list_pages`, `drawio/get_page`, `drawio/set_page`
+- Workspace MCP config:
+
+```json
+{
+  "servers": {
+    "drawio": {
+      "command": "npx",
+      "args": ["-y", "@drawio/mcp"]
+    }
+  }
+}
+```
+
+Supported inputs: XML, Mermaid, CSV.
+Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
+
+> Use **Option A** if your host supports MCP Apps inline rendering (Claude.ai, Cursor ≥ 2.6) or if the "Open in draw.io" button workflow is acceptable. Use **Option B** for VS Code / GitHub Copilot or any standard MCP client.
+
+### Icon discovery tool (both servers)
+
+- MCP tool: `drawio/search_shapes` — search 10,000+ draw.io shapes and return ready-to-use style strings.
+
 ## Recommended Workflow
 
-1. **Identify the cloud provider** — determine whether the diagram uses Azure, AWS, or both (multi-cloud).
-2. **Verify icon paths from the static catalogs** — no scripts needed at runtime:
-   - Azure: grep `references/azure2-complete-catalog.txt`
-   - AWS: grep `references/aws4-complete-catalog.txt`
-   - Multi-cloud: grep both catalogs as needed.
-3. If diagram uses neither Azure nor AWS icons — or is a **sequence or flow diagram** (auth flow, API call chain, CI/CD pipeline): skip icon lookup. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
-4. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see Azure section below):
+1. **Identify the input format and cloud provider**
+   - For flowcharts, sequence diagrams, ERD, mind maps, Gantt, timelines, kanban: prefer **Mermaid** if the Tool Server is available, or use the App Server's `mermaid` parameter.
+   - For org charts or flowcharts from tabular data: use **CSV** with the Tool Server (`drawio/open_drawio_csv`).
+   - For precise cloud architecture diagrams with official icons: use **XML** (`drawio/create_diagram` or `drawio/open_drawio_xml`).
+   - Determine whether the diagram uses Azure, AWS, or both.
+
+2. **Discover icons with `drawio/search_shapes`** — it searches all 10,000+ shapes and returns exact style strings.
+   - Example queries: `"azure virtual machine"`, `"aws lambda"`, `"gcp compute engine"`, `"cisco router"`, `"kubernetes pod"`.
+   - Use the returned style string directly in the XML cell.
+   - Skip `search_shapes` for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps) that only need rectangles, diamonds, circles, and arrows.
+
+4. **Skip icon lookup only for standard geometric diagrams** — flowcharts, UML, ERD, org charts, mind maps, timelines, and wireframes that need only rectangles, diamonds, circles, and arrows. For any cloud, vendor, or branded diagram (Azure, AWS, GCP, Kubernetes, Cisco, brand logos, etc.), use `drawio/search_shapes` to find the correct icon style string. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
+
+5. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see Azure section below):
    - Use larger canvas (1900x1500)
    - VNets with thick borders (strokeWidth=4)
    - Subnets with dashed borders (strokeWidth=2, dashPattern=8 8)
    - Position resources inside their subnets
    - Label all traffic flows with protocols/ports
    - Include network isolation explanation box
-5. **For AWS infrastructure/network diagrams**: apply AWS Network Topology Patterns (see AWS section below):
+
+6. **For AWS infrastructure/network diagrams**: apply AWS Network Topology Patterns (see AWS section below):
    - Use larger canvas (1900x1500) for multi-VPC/account topologies
    - VPCs with thick borders (strokeWidth=4)
    - Subnets (public/private) with dashed borders (strokeWidth=2, dashPattern=8 8)
    - Position resources inside their respective subnets
    - Label all traffic flows with protocols/ports
    - Include security group / NACL notation
-6. Build a valid `mxGraphModel` payload using verified icons when applicable.
-7. Call `drawio/create_diagram` with the XML.
-8. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
-9. Keep labels concise and explicit (service name + role).
-10. For cloud-specific diagrams, prefer one icon per major service and use edges for flow semantics (ingress/egress/peering/telemetry).
+
+7. **Build the payload**
+   - XML: valid `mxGraphModel` using verified icons/style strings.
+   - Mermaid: valid Mermaid.js definition (App Server: pass as `mermaid`; Tool Server: use `drawio/open_drawio_mermaid`).
+   - CSV: valid CSV content (Tool Server: use `drawio/open_drawio_csv`).
+
+8. **Call the appropriate tool**
+   - App Server: `drawio/create_diagram` with `xml` or `mermaid`.
+   - Tool Server: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, or `drawio/open_drawio_csv`.
+
+9. **Apply layout passes when useful**
+   - App Server: `postLayout: "elk"` for a full re-layout, or `routing: "libavoid"` to tidy connectors while keeping your positions.
+   - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
+   - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges.
+
+10. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
+
+11. Keep labels concise and explicit (service name + role).
+
+12. For cloud-specific diagrams, prefer one icon per major service and use edges for flow semantics (ingress/egress/peering/telemetry).
+
+## Input Format Quick Reference
+
+Choose the input that matches the diagram type and configured server.
+
+| Input | Best for | App Server | Tool Server |
+|---|---|---|---|
+| **XML** | Precise cloud architectures, custom layouts, network topology | `drawio/create_diagram` with `xml` | `drawio/open_drawio_xml` |
+| **Mermaid** | Flowcharts, sequence, class, ER, state, mindmap, Gantt, timeline, kanban | `drawio/create_diagram` with `mermaid` | `drawio/open_drawio_mermaid` |
+| **CSV** | Org charts, flowcharts, simple diagrams from tabular data | Not supported | `drawio/open_drawio_csv` |
+
+Use Mermaid for standard diagram types; use XML when the user needs official cloud icons, precise positioning, complex containers, or custom styling. See [references/REFERENCE.md](references/REFERENCE.md) for Mermaid/CSV examples and multi-page editing details.
 
 ## Visual Quality Guardrails
 
@@ -284,21 +354,18 @@ Use this section for diagrams that show **temporal flows** — what happens in o
 
 This section applies only when the diagram includes Azure services/icons.
 
-1. **Use the static catalog** — `references/azure2-complete-catalog.txt` contains all 648 Azure2 icons.
-   - Grep it to find icon paths: `grep -i "gateway" references/azure2-complete-catalog.txt`
-   - No HTTP requests or script execution needed at runtime.
-2. **Hard gate**
-   - If an icon path cannot be confirmed in the catalog, do **not** use it in `drawio/create_diagram`.
-   - Find an alternative via grep first.
-3. **Render review fallback**
-   - If diagram review shows wrong/missing icon rendering, grep the catalog for alternative paths.
-   - Substitute and regenerate the diagram.
-4. **Refresh catalog** (periodic, human-run — not per diagram):
+1. **Use `drawio/search_shapes`**
+   - Search for the service by name and use the returned style string directly.
+   - Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
+   - This is the upstream-recommended path and covers all 10,000+ shapes.
 
-```bash
-cd .github/skills/drawio-mcp-diagramming/scripts
-python3 search_azure2_icons_github.py --max-results 9999 > ../references/azure2-complete-catalog.txt
-```
+2. **Hard gate**
+   - If an icon style string cannot be confirmed via `drawio/search_shapes`, do **not** use it.
+   - Find an alternative via `drawio/search_shapes` first.
+
+3. **Render review fallback**
+   - If diagram review shows wrong/missing icon rendering, use `drawio/search_shapes` for alternative style strings.
+   - Substitute and regenerate the diagram.
 
 ## Azure Icon Caveats (Important)
 
@@ -317,24 +384,20 @@ Azure icon rendering in draw.io can fail for two common reasons:
 
 This section applies only when the diagram includes AWS services/icons.
 
-> **Important difference from Azure**: AWS4 icons in draw.io are **stencil-based**, not individual SVG files. They are referenced using `shape=mxgraph.aws4.<name>` rather than `image=img/lib/aws4/...`. The catalog lists ready-to-use style strings in this format.
+> **Important difference from Azure**: AWS4 icons in draw.io are **stencil-based**, not individual SVG files. They are typically referenced using `shape=mxgraph.aws4.<name>`. `drawio/search_shapes` returns the correct style string, including fill colours.
 
-1. **Use the static catalog** — `references/aws4-complete-catalog.txt` contains all 1,037 AWS4 stencil shape names.
-   - Grep it to find shapes: `grep -i "lambda" references/aws4-complete-catalog.txt`
-   - Each line is a ready-to-use `shape=mxgraph.aws4.*` style string.
-   - No HTTP requests or script execution needed at runtime.
+1. **Use `drawio/search_shapes`**
+   - Search for the service by name and use the returned style string directly.
+   - Example queries: `"aws lambda"`, `"aws s3"`, `"aws ec2"`, `"aws rds"`.
+   - This is the upstream-recommended path and covers all 10,000+ shapes.
+
 2. **Hard gate**
-   - If a shape name cannot be confirmed in the catalog, do **not** use it in `drawio/create_diagram`.
-   - Find an alternative via grep first.
-3. **Render review fallback**
-   - If diagram review shows wrong/missing shape rendering, grep the catalog for alternative names.
-   - Substitute and regenerate the diagram.
-4. **Refresh catalog** (periodic, human-run — not per diagram):
+   - If a shape style string cannot be confirmed via `drawio/search_shapes`, do **not** use it.
+   - Find an alternative via `drawio/search_shapes` first.
 
-```bash
-cd .github/skills/drawio-mcp-diagramming/scripts
-python3 search_aws4_icons_github.py --max-results 9999 > ../references/aws4-complete-catalog.txt
-```
+3. **Render review fallback**
+   - If diagram review shows wrong/missing shape rendering, use `drawio/search_shapes` for alternative style strings.
+   - Substitute and regenerate the diagram.
 
 ## AWS Icon Caveats (Important)
 
@@ -358,25 +421,32 @@ AWS4 icon rendering in draw.io can fail for two common reasons:
 
 ## How to Discover Icons
 
-Grep the static catalogs — no scripts needed at agent runtime:
+Use `drawio/search_shapes` for cloud, branded, or pictorial icons. It returns exact style strings ready to paste into XML.
 
-```bash
-grep -i "gateway" references/azure2-complete-catalog.txt     # Azure
-grep -i "lambda"  references/aws4-complete-catalog.txt       # AWS
+- **Azure**: query `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`.
+- **AWS**: query `"aws lambda"`, `"aws s3"`, `"aws ec2"`.
+- **GCP**: query `"gcp compute engine"`, `"gcp cloud storage"`, `"gcp cloud sql"`.
+- **Other**: query `"cisco router"`, `"kubernetes pod"`, `"react"`, `"slack"`.
+
+Use the returned `style` value directly on the `mxCell`.
+
+For Azure2 image-style icons, the result typically looks like:
+```text
+image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/<category>/<Icon_Name>.svg;
 ```
 
-Use verified paths in cell styles:
-- **Azure**: `image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/<category>/<Icon_Name>.svg;`
-- **AWS**: `shape=mxgraph.aws4.<shape_name>;fillColor=<service_color>;fontColor=#ffffff;strokeColor=none;`
-
-See [references/REFERENCE.md](references/REFERENCE.md) for absolute URL fallback, additional grep examples, and known-good icon style strings.
+For AWS4 stencil icons, the result typically looks like:
+```text
+shape=mxgraph.aws4.<shape_name>;fillColor=<service_color>;fontColor=#ffffff;strokeColor=none;
+```
 
 ## Fallback Strategy if Icons Still Fail
 
 If Azure or AWS icons still do not render:
 
 - Do **not** generate the diagram with an unresolved icon set.
-- Return the missing icon list and propose verified replacements (grepped from the relevant catalog).
+- Use `drawio/search_shapes` to find alternative exact style strings.
+- Return the missing icon list and propose verified replacements.
 - After replacements validate to `OK`, then generate the diagram.
 
 ## Exporting Diagrams
@@ -392,27 +462,27 @@ If Azure or AWS icons still do not render:
 
 ## Troubleshooting Checklist
 
-- Confirm MCP server appears in `MCP: List Servers`.
+- Confirm the configured MCP server appears in `MCP: List Servers`.
 - Run `MCP: Reset Cached Tools` if tool list is stale.
 - Ensure XML is well-formed (no malformed tags or invalid comments).
 - **Azure**: Verify style uses `image=img/lib/azure2/...` for Azure2 icon mode.
-- **AWS**: Verify style uses `image=img/lib/aws4/...` for AWS4 icon mode.
+- **AWS**: Verify style uses `shape=mxgraph.aws4.<name>` for AWS4 icon mode (not `image=img/lib/aws4/...`).
 - Reopen diagram in web draw.io if VS Code extension rendering differs.
-- If an Azure icon path looks wrong, grep `references/azure2-complete-catalog.txt` for alternatives.
-- If an AWS icon path looks wrong, grep `references/aws4-complete-catalog.txt` for alternatives.
-- If either catalog appears stale, re-run the refresh workflow in REFERENCE.md.
+- If an icon looks wrong, use `drawio/search_shapes` for an alternative exact style string.
 
-## Prompt Template for Agents
+## Prompt Templates and Checklists
 
-See [references/REFERENCE.md](references/REFERENCE.md) for full example prompt templates.
+See [references/REFERENCE.md](references/REFERENCE.md) for diagram-type prompt presets and [references/layout-antipatterns.md](references/layout-antipatterns.md) for the pre-flight layout checklist.
 
 ## Definition of Done
 
-- All icon paths confirmed against the relevant static catalog before calling `drawio/create_diagram`; unconfirmed icons are not used
-- Diagram renders correctly; XML is valid and opens in draw.io
-- Cloud resources identifiable via correct icons and clear labels
-- All applicable topology checklist items passed (borders, subnets, traffic labels, legend, isolation box, zones, canvas size)
-- All applicable sequence/flow checklist items passed (numbered steps, colour-coded edges, error paths, canvas size)
-- Animation preference confirmed; `flowAnimation=1;` applied only to user-identified edges
-- File artifact saved as `.drawio` (wrapped in `<mxfile>`) if requested
-- Layout anti-patterns checked against [references/layout-antipatterns.md](references/layout-antipatterns.md) before finalising
+- The correct input format and MCP tool were chosen (XML, Mermaid, or CSV; App Server or Tool Server).
+- All icon/style strings confirmed via `drawio/search_shapes` before generating; unconfirmed icons are not used.
+- Diagram renders correctly; XML/Mermaid/CSV is valid and opens in draw.io.
+- Cloud resources identifiable via correct icons and clear labels.
+- Layout passes applied appropriately (`postLayout: "elk"` and/or `routing: "libavoid"` for App Server; `routing: "libavoid"` for Tool Server `open_drawio_xml`).
+- All applicable topology checklist items passed (borders, subnets, traffic labels, legend, isolation box, zones, canvas size).
+- All applicable sequence/flow checklist items passed (numbered steps, colour-coded edges, error paths, canvas size).
+- Animation preference confirmed; `flowAnimation=1;` applied only to user-identified edges.
+- File artifact saved as `.drawio` (wrapped in `<mxfile>`) if requested.
+- Layout anti-patterns checked against [references/layout-antipatterns.md](references/layout-antipatterns.md) before finalising.

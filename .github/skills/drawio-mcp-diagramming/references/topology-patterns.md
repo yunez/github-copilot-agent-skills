@@ -18,7 +18,7 @@ Complete example `mxGraphModel` XML for Azure and AWS infrastructure topology di
     style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f4ea;strokeColor=#82b366;
     verticalAlign=top;fontSize=13;fontStyle=1;strokeWidth=2;dashed=1;dashPattern=8 8;"
     vertex="1" parent="1"><mxGeometry x="260" y="280" width="480" height="300"/></mxCell>
-  <!-- Resource inside subnet (verify path: grep -i "virtual_machine" references/azure2-complete-catalog.txt) -->
+  <!-- Resource inside subnet (confirm path via drawio/search_shapes: "azure virtual machine") -->
   <mxCell id="vm" value="App VM"
     style="image;aspect=fixed;html=1;points=[];align=center;
     image=img/lib/azure2/compute/Virtual_Machine.svg;"
@@ -61,7 +61,7 @@ Complete example `mxGraphModel` XML for Azure and AWS infrastructure topology di
     style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF7FF;strokeColor=#6c8ebf;
     verticalAlign=top;fontSize=12;fontStyle=1;strokeWidth=2;dashed=1;dashPattern=8 8;"
     vertex="1" parent="1"><mxGeometry x="260" y="520" width="500" height="200"/></mxCell>
-  <!-- ALB in public subnet (verify: grep -i "load_balancer" references/aws4-complete-catalog.txt) -->
+  <!-- ALB in public subnet (confirm style via drawio/search_shapes: "aws application load balancer") -->
   <mxCell id="alb" value="ALB"
     style="shape=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;
     fontColor=#ffffff;strokeColor=none;"

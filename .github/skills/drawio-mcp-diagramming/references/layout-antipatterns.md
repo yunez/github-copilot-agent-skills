@@ -143,7 +143,7 @@ AWS4 icons are stencil-based and must **not** be referenced as SVG image paths.
 </mxCell>
 ```
 
-Always grep `references/aws4-complete-catalog.txt` for the exact shape name before adding an AWS icon.
+Always confirm the exact AWS4 style string via `drawio/search_shapes` before adding an AWS icon.
 
 ### Decorative icon positioning
 
@@ -195,5 +195,20 @@ When generating `mxGraphModel` XML, always emit one `mxCell` per line with child
 **AWS-specific:**
 - [ ] CloudWatch / CloudTrail / Config are **outside** any VPC or subnet container
 - [ ] AWS icons use `shape=mxgraph.aws4.<name>` style (not `image=img/lib/aws4/...`)
-- [ ] Shape names verified against `references/aws4-complete-catalog.txt` before use
+- [ ] Shape style strings confirmed via `drawio/search_shapes` before use
 - [ ] fillColor matches AWS service category colour conventions
+
+## Pre-Flight Layout Checklist
+
+Before finalising any diagram, run through these checks:
+
+- [ ] No overlapping nodes or labels
+- [ ] No edges passing through unrelated shapes (use `routing: "libavoid"` if needed)
+- [ ] Labels are readable and not clipped
+- [ ] One icon per major service; no icon-per-step clutter
+- [ ] Edge colours consistently encode meaning (request, response, error, async, token)
+- [ ] Containers/swimlanes clearly group related elements
+- [ ] Canvas size fits content without excessive whitespace
+- [ ] Animation (`flowAnimation=1;`) only applied where the user requested it
+- [ ] For topology diagrams: legend and isolation explanation boxes present
+- [ ] For sequence/flow diagrams: steps numbered, error paths shown, actors labelled

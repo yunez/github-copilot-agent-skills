@@ -1,33 +1,27 @@
 # Draw.io Azure2 References
 
-This folder contains reference artifacts for the `drawio-mcp-diagramming` skill.
+This folder contains reference artifacts for the `azure-drawio-mcp-diagramming` skill.
 
-## Files
+## Icon Discovery
 
-- `azure2-complete-catalog.txt`
-  - Complete Azure2 icon inventory (648 icons) from `jgraph/drawio` GitHub tree under `img/lib/azure2`.
-  - Use this as the canonical lookup for icon paths — **no scripts needed at agent runtime**.
-  - Agent usage: `grep -i "keyword" references/azure2-complete-catalog.txt`
+The primary way to find Azure2 icons is the MCP tool:
+
+- `drawio/search_shapes` — search 10,000+ draw.io shapes and return exact style strings.
+- Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`.
+
+Use the returned `style` value directly in the XML `mxCell`. Do not use unconfirmed icon paths.
+
+## Reference Files
 
 - `layout-antipatterns.md`
   - Worked examples of layout problems (stacked edges, repeated labels, observability inside VNet, etc.)
   - Derived from real diagram review sessions.
   - Use this as the first reference when a diagram looks cluttered or has overlapping lines/labels.
 
-## Refresh Workflow
-
-Refresh the catalog when draw.io updates its icon library (not required per-run):
-
-```bash
-cd .github/skills/drawio-mcp-diagramming/scripts
-python3 search_azure2_icons_github.py --max-results 9999 > ../references/azure2-complete-catalog.txt
-```
-
 ## Notes
 
-- The catalog is pre-generated — agents should grep it directly rather than running scripts.
-- If an icon appears missing from the catalog, re-run the refresh workflow above.
-- If render review shows bad/missing icons, grep the catalog for alternative paths and substitute.
+- Always confirm icon style strings via `drawio/search_shapes` before use.
+- If render review shows bad/missing icons, use `drawio/search_shapes` for alternative paths and substitute.
 
 ## Example Prompt Templates
 
