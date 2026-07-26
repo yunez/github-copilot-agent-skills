@@ -39,13 +39,15 @@ Always run `drawio/search_shapes` calls **one at a time** (sequentially) — nev
 
 ---
 
-## `routing: "libavoid"` Does Not Fix Stacked Same-Source Edges
+## Arrow routing defaults (all diagram types)
 
-`routing: "libavoid"` reroutes edges around obstacles and node shapes. It does **not** separate two edges that both originate from the same point on the same node. If multiple edges leave a node without distinct `exitX`/`exitY` values, they will stack on top of each other regardless of `routing: "libavoid"`.
+Use routing passes first:
 
-**Rule**: Always assign `exitX`/`exitY` (and `entryX`/`entryY`) before relying on a layout pass to clean up routing. The layout pass is a finishing step, not a substitute for correct connection-point assignment.
+- Use `edgeStyle=orthogonalEdgeStyle` on XML edges.
+- Use `routing: "libavoid"` when you want to keep manual node positions and clean connector paths.
+- Use `postLayout: "elk"` when you want a full auto-layout that moves vertices.
 
-`postLayout: "elk"` fully re-lays out the entire graph (moves nodes and routes edges). Use it when you want the engine to arrange everything. Use `routing: "libavoid"` only when you want to keep your manual node positions and just improve edge paths.
+`routing: "libavoid"` does not always separate same-source stacked edges. If key arrows still overlap after routing, then add explicit `exitX`/`exitY` and `entryX`/`entryY` only to those edges.
 
 ---
 
@@ -62,9 +64,9 @@ Overlapping arrows are the most common visual quality problem in generated diagr
 | Observability (diagnostic logs from multiple services to Log Analytics / CloudWatch) | Draw **one representative edge** from the most significant source, labelled `"Diagnostic settings (all services)"`. Max 2 observability edges in any diagram. |
 | Security / identity pattern (Managed Identity → Key Vault, or IAM Role → Secrets Manager, from multiple services) | Draw **one amber dashed edge** from the primary service. Not one per service instance. |
 
-### Exit and entry connection points
+### Exit and entry connection points (when needed)
 
-Use `exitX`, `exitY`, `entryX`, `entryY` on any node with more than two edges. Spread exit positions so edges leave from different faces:
+Use `exitX`, `exitY`, `entryX`, `entryY` only when routing leaves important overlaps. Spread exit positions so edges leave from different faces:
 
 | Face | Style fragment |
 |---|---|
@@ -98,11 +100,14 @@ Example — API Management fanning out to three backends with staggered right-si
 </mxCell>
 ```
 
-### Waypoints for cross-zone edges
+### Waypoints for cross-zone edges (last resort)
 
-When an edge travels from inside a network zone (e.g. VNet subnet, VPC) down to a zone below (Security or Observability plane), add an explicit `<Array>` waypoint to route it cleanly without crossing unrelated nodes.
+Avoid manual waypoints by default. For most diagrams, `routing: "libavoid"` or `postLayout: "elk"` is enough and produces cleaner, less brittle XML.
 
-Set the waypoint `x` to the horizontal midpoint of the source node; set `y` to just below the bottom edge of its parent zone rectangle.
+Add an explicit `<Array>` waypoint only when all of the following are true:
+- A critical cross-zone edge is still ambiguous after routing.
+- The user needs a fixed, hand-placed layout.
+- A single intermediate bend point clarifies the path.
 
 ```xml
 <mxCell id="e-apim-kv" value="HTTPS:443 (Managed Identity)"
@@ -121,9 +126,11 @@ Set the waypoint `x` to the horizontal midpoint of the source node; set `y` to j
 
 Run this check before writing edge XML for any infrastructure diagram:
 
-- [ ] Count edges per source node — nodes with 3+ edges must use distinct `exitX`/`exitY` values
+- [ ] Count edges per source node — consolidate duplicate fan-outs before adding extra arrows
 - [ ] Fan-out patterns (same edge type, multiple same-tier targets) → consolidated to one labelled edge
-- [ ] Cross-zone edges (VNet/VPC → Security or Observability plane) → `<Array>` waypoints added
+- [ ] Routing pass chosen (`routing: "libavoid"` for hand-placed layouts or `postLayout: "elk"` for full auto-layout)
+- [ ] Manual `exitX`/`exitY` applied only where important overlaps remain after routing
+- [ ] Cross-zone `<Array>` waypoints used only when routing still leaves an ambiguous critical path
 - [ ] No two edges share the same label leaving the same source node
 - [ ] Observability telemetry: ≤ 2 edges total across the whole diagram
 - [ ] Security/identity pattern: ≤ 1 amber dashed edge per service tier

@@ -1,6 +1,10 @@
 ---
 name: drawio-mcp-diagramming
 description: Create and edit diagrams using the Draw.io MCP server — any shape, any vendor. USE FOR: draw me a diagram, create an architecture diagram, add Azure/AWS/GCP/Cisco/Kubernetes icons to a diagram, convert Mermaid to draw.io, fix overlapping arrows, edit a .drawio file, network topology diagrams, CI/CD pipeline diagrams, auth flow diagrams. Supports XML, Mermaid, and CSV. Uses `drawio/search_shapes` to find any of 10,000+ shapes across all vendor and icon libraries. DO NOT USE FOR: Excalidraw output (use excalidraw-mcp-diagramming skill).
+metadata:
+  author: Thomas Thornton
+  version: "1.1.1"
+  last-updated: "2026-07-26"
 ---
 
 # Draw.io MCP Diagramming Skill
@@ -100,7 +104,7 @@ The draw.io MCP server enforces strict XML rules and generated diagrams frequent
    - Use the returned style string directly in the XML cell — do not guess or fabricate style strings.
    - Skip `search_shapes` only for diagrams that use purely geometric shapes: rectangles, diamonds, circles, and arrows.
 
-4. **When to use `search_shapes` vs skip it** — if a shape has a recognised name, brand, or product identity, always look it up via `search_shapes` first. Only skip it for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes) that need no pictorial icons. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
+3. **When to use `search_shapes` vs skip it** — if a shape has a recognised name, brand, or product identity, always look it up via `search_shapes` first. Only skip it for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes) that need no pictorial icons. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
 
 5. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see Azure section below):
    - Use larger canvas (1900x1500)
@@ -131,7 +135,7 @@ The draw.io MCP server enforces strict XML rules and generated diagrams frequent
    - App Server: `postLayout: "elk"` for a full re-layout (moves nodes + routes edges), or `routing: "libavoid"` to improve edge paths **while keeping your manual node positions**.
    - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
    - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges.
-   - `routing: "libavoid"` does **not** separate same-source stacked edges. If multiple edges leave the same node at the same point, assign `exitX`/`exitY` values first — the layout pass is a finishing step, not a substitute.
+   - Default arrow strategy for any diagram type: use `edgeStyle=orthogonalEdgeStyle` + layout pass first. Add manual `exitX`/`entryX` (and waypoints only if strictly needed) only when key edges still overlap after routing.
 
 10. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
 
@@ -160,7 +164,7 @@ Apply these defaults unless the user explicitly asks for a dense/technical view:
 - Use stage numbering (`1`, `2`, `3`, `4`) instead of many edge labels.
 - Keep one icon per major component; avoid icon-per-step layouts.
 - Limit cross-lane dashed lines to one security/auth line and one optional telemetry line.
-- **Edge density**: nodes with 3+ outgoing edges must use `exitX`/`exitY` connection points to fan them out. Fan-out to same-tier targets (e.g. one gateway → 3 backends, same protocol) should use one aggregated edge not separate identical arrows. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md) for exit-point values and consolidation patterns.
+- **Edge density**: for nodes with 3+ outgoing edges, first reduce duplicates (for example one gateway → one aggregated backend edge). If important edges still overlap after `routing: "libavoid"` or `postLayout: "elk"`, then add explicit `exitX`/`exitY` connection points.
 - Keep text concise (single purpose per box) and avoid multiline overload.
 - **Animated flow on connectors**: adding `flowAnimation=1;` to any edge style renders a moving dot that travels along the arrow, making directional flow immediately visible without extra labels — ideal for data-flow and pipeline diagrams. The animation is preserved in SVG export and the draw.io desktop app. By default, ask the user whether they want any flow arrows animated before generating the diagram — *"Would you like any of the flow arrows animated to show traffic direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges the user identifies. If the user has already indicated they want a static/clean diagram, skip the question.
 - Prefer a "clean" variant first; add detail only if requested.
