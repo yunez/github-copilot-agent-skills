@@ -8,14 +8,6 @@ Install the full curated collection with APM, pick an individual skill through t
 
 ---
 
-## What are agent skills?
-
-A **skill** is a focused instruction bundle — a `SKILL.md` file — that GitHub Copilot loads when a task matches its trigger description. Skills carry a defined purpose, step-by-step workflow, tool guidance, and references, replacing ad-hoc prompts with consistent, repeatable behaviour.
-
-An **agent** is a selectable GitHub Copilot Chat mode with a fixed role, persona, and tool access. Agents appear in the Copilot Chat agent picker and guide you through multi-step workflows such as designing an architecture or upgrading a Terraform provider.
-
----
-
 ## Browse the skills
 
 The repository is indexed at **[skills.sh/thomast1906/github-copilot-agent-skills](https://www.skills.sh/thomast1906/github-copilot-agent-skills)**, where you can browse individual skills, view their descriptions, and see skills.sh-specific installation statistics. Note that the skills.sh counters reflect installs made through the skills.sh platform and CLI; they do not include APM installations, Git clones, or manual copies.
@@ -148,10 +140,10 @@ Select an agent from the GitHub Copilot Chat agent picker for a guided, role-spe
 
 | Agent | What it does | APM bundle |
 |---|---|---|
-| `azure-architect` | Designs Azure architectures and produces HLD documents aligned to WAF and CAF. | `packages/architect` |
-| `terraform-provider-upgrade` | Performs structured Terraform provider upgrades and compatibility validation. | `packages/terraform` |
-| `gh-aw-builder` | Creates markdown-based GitHub Agentic Workflows with frontmatter, MCP wiring, and safe outputs. | `packages/terraform` |
-| `apim-policy-author` | Generates Azure API Management policy XML for authentication, rate limiting, CORS, and error handling. | Repository only |
+| [`azure-architect`](.github/agents/azure-architect.agent.md) | Designs Azure architectures and produces HLD documents aligned to WAF and CAF. | `packages/architect` |
+| [`terraform-provider-upgrade`](.github/agents/terraform-provider-upgrade.agent.md) | Performs structured Terraform provider upgrades and compatibility validation. | `packages/terraform` |
+| [`gh-aw-builder`](.github/agents/gh-aw-builder.agent.md) | Creates markdown-based GitHub Agentic Workflows with frontmatter, MCP wiring, and safe outputs. | `packages/terraform` |
+| [`apim-policy-author`](.github/agents/apim-policy-author.agent.md) | Generates Azure API Management policy XML for authentication, rate limiting, CORS, and error handling. | Repository only |
 
 ---
 
