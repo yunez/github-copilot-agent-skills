@@ -9,7 +9,7 @@ metadata:
 
 # Draw.io MCP Diagramming Skill
 
-Create or update diagrams via the Draw.io MCP server. Before generating XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) — hard constraints and edge routing rules that prevent the most common rendering failures. For layout anti-pattern fixes, see [references/layout-antipatterns.md](references/layout-antipatterns.md). For network topology styles and checklists (Azure VNets, AWS VPCs), see [references/topology-patterns.md](references/topology-patterns.md).
+Create or update diagrams via the Draw.io MCP server. Before generating XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) — hard constraints, container rules, and edge routing guidance that prevent the most common rendering failures. For layout anti-pattern fixes, see [references/layout-antipatterns.md](references/layout-antipatterns.md). For cloud topology conventions, icon libraries, and worked examples, see [references/azure.md](references/azure.md) and [references/aws.md](references/aws.md).
 
 For diagrams that use only basic shapes (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes), skip icon discovery and proceed directly to `drawio/create_diagram` or `drawio/open_drawio_mermaid`.
 
@@ -67,13 +67,14 @@ Optional layout passes: `postLayout: "elk"`, `routing: "libavoid"`.
 ```
 
 Supported inputs: XML, Mermaid, CSV.
-Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
+Optional layout pass: `routing: "libavoid"` on `open_drawio_xml` — **requires `@drawio/mcp` v1.3.0 or later**. On older versions the parameter is ignored, so pin with `npx -y @drawio/mcp@latest` if connector routing does not improve.
 
 > Use **Option A** if your host supports MCP Apps inline rendering (Claude.ai, Cursor ≥ 2.6) or if the "Open in draw.io" button workflow is acceptable. Use **Option B** for VS Code / GitHub Copilot or any standard MCP client.
 
 ### Icon discovery tool (both servers)
 
 - MCP tool: `drawio/search_shapes` — search 10,000+ draw.io shapes and return ready-to-use style strings.
+- Parameters: `query` (space-separated keywords) and optional `limit` (default 10, max 50). Raise `limit` when a first search returns nothing usable, before concluding a shape does not exist.
 
 ### Tool name detection
 
@@ -83,12 +84,13 @@ MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_creat
 
 In VS Code and GitHub Copilot, parallel tool calls are cancelled if the user sends a new message while they are in flight. Always run `drawio/search_shapes` calls **one at a time** — never in parallel batches.
 
-### XML hard constraints and edge routing rules
+### XML hard constraints, containers, and edge routing
 
-The draw.io MCP server enforces strict XML rules and generated diagrams frequently suffer from overlapping arrows. Before generating any XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) which covers:
+The draw.io MCP server enforces strict XML rules, and the most common quality failures are flattened hierarchy and hand-routed edges. Before generating any XML, read [references/xml-authoring-rules.md](references/xml-authoring-rules.md) which covers:
 
-- **Hard constraints** — forbidden constructs that cause the server to return a render error (XML comments, duplicate IDs, self-closing geometry with children, unescaped characters)
-- **Edge density rules** — max edges per node, fan-out consolidation, exit/entry connection points, cross-zone waypoints
+- **Hard constraints** — forbidden constructs that cause the server to return a render error (XML comments, duplicate IDs, self-closing edge/geometry elements, unescaped characters)
+- **Container rules** — nested `swimlane` containment, relative child coordinates, and why cross-container edges must sit at `parent="1"`
+- **Edge routing** — let `routing: "libavoid"` or `postLayout: "elk"` compute paths; the narrow cases where manual connection points are justified
 - **Pre-generation edge checklist** — run before writing edge XML for any infrastructure diagram
 
 ## Recommended Workflow
@@ -106,42 +108,30 @@ The draw.io MCP server enforces strict XML rules and generated diagrams frequent
 
 3. **When to use `search_shapes` vs skip it** — if a shape has a recognised name, brand, or product identity, always look it up via `search_shapes` first. Only skip it for standard geometric diagrams (flowcharts, UML, ERD, org charts, mind maps, timelines, wireframes) that need no pictorial icons. For sequence and flow diagrams, apply Sequence and Flow Diagram Patterns (see section below).
 
-5. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see Azure section below):
-   - Use larger canvas (1900x1500)
-   - VNets with thick borders (strokeWidth=4)
-   - Subnets with dashed borders (strokeWidth=2, dashPattern=8 8)
-   - Position resources inside their subnets
-   - Label all traffic flows with protocols/ports
-   - Include network isolation explanation box
+4. **Nest groupings with real containers, not stacked rectangles** — for any diagram with hierarchy (VNet → Subnet → resource, VPC → AZ → instance, Region → Environment → Service, swimlanes), make each level a `swimlane;startSize=24;` container, set `parent="<container_id>"` on children, and give children coordinates **relative to their parent**. Edges between cells in *different* containers must use `parent="1"` or they render inside the container and get clipped. Drawing a large rectangle and positioning shapes on top of it at absolute coordinates is the anti-pattern the draw.io XML reference explicitly calls out — it breaks move/resize, collapse, and layout passes.
 
-6. **For AWS infrastructure/network diagrams**: apply AWS Network Topology Patterns (see AWS section below):
-   - Use larger canvas (1900x1500) for multi-VPC/account topologies
-   - VPCs with thick borders (strokeWidth=4)
-   - Subnets (public/private) with dashed borders (strokeWidth=2, dashPattern=8 8)
-   - Position resources inside their respective subnets
-   - Label all traffic flows with protocols/ports
-   - Include security group / NACL notation
+5. **For cloud infrastructure diagrams, load the vendor reference** — read [references/azure.md](references/azure.md) for anything with VNets, subnets, or Azure icons, and [references/aws.md](references/aws.md) for anything with VPCs, AZs, or AWS icons. Read both for multi-cloud diagrams. Each covers that vendor's icon library and caveats, container structure, colour palette, annotation boxes, a complete worked example, and a topology checklist.
 
-7. **Build the payload**
+6. **Build the payload**
    - XML: valid `mxGraphModel` using verified icons/style strings.
    - Mermaid: valid Mermaid.js definition (App Server: pass as `mermaid`; Tool Server: use `drawio/open_drawio_mermaid`).
    - CSV: valid CSV content (Tool Server: use `drawio/open_drawio_csv`).
 
-8. **Call the appropriate tool**
+7. **Call the appropriate tool**
    - App Server: `drawio/create_diagram` with `xml` or `mermaid`.
    - Tool Server: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, or `drawio/open_drawio_csv`.
 
-9. **Apply layout passes when useful**
-   - App Server: `postLayout: "elk"` for a full re-layout (moves nodes + routes edges), or `routing: "libavoid"` to improve edge paths **while keeping your manual node positions**.
-   - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
-   - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges.
-   - Default arrow strategy for any diagram type: use `edgeStyle=orthogonalEdgeStyle` + layout pass first. Add manual `exitX`/`entryX` (and waypoints only if strictly needed) only when key edges still overlap after routing.
+8. **Decide the layout pass before writing XML, then let it route the edges**
+   - `routing: "libavoid"` — keeps your hand-placed coordinates and only reroutes connectors around shapes. This is the default for topology, architecture, deployment, and container-based diagrams.
+   - `postLayout: "elk"` — full re-layout that replaces your vertex positions. Use for directional/hierarchical XML (pipelines, decision flows). Add `direction: "horizontal"` when the flow reads left-to-right — it defaults to `vertical`, which is why left-to-right CI/CD pipelines come out stacked.
+   - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges. `direction` is XML-only and ignored for Mermaid (Mermaid takes direction from `flowchart TD/LR`).
+   - Do **not** hand-write `exitX`/`entryX` or `<Array as="points">` waypoints. The routing pass computes them, and manual values fight it. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md) for the narrow exceptions.
 
-10. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
+9. If the user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`. **Read [references/standalone-file-requirements.md](references/standalone-file-requirements.md) before writing any `.drawio` file by hand** (or whenever the MCP tools are unavailable) — the MCP tools add `as="geometry"` and the `mxGraphModel` layout attributes for you, and without them every element collapses to the origin.
 
-11. Keep labels concise and explicit (service name + role).
+10. Keep labels concise and explicit (service name + role).
 
-12. Prefer one icon per major component or service; use edges for flow semantics (ingress/egress/dependency/telemetry).
+11. Prefer one icon per major component or service; use edges for flow semantics (ingress/egress/dependency/telemetry).
 
 ## Input Format Quick Reference
 
@@ -164,20 +154,22 @@ Apply these defaults unless the user explicitly asks for a dense/technical view:
 - Use stage numbering (`1`, `2`, `3`, `4`) instead of many edge labels.
 - Keep one icon per major component; avoid icon-per-step layouts.
 - Limit cross-lane dashed lines to one security/auth line and one optional telemetry line.
-- **Edge density**: for nodes with 3+ outgoing edges, first reduce duplicates (for example one gateway → one aggregated backend edge). If important edges still overlap after `routing: "libavoid"` or `postLayout: "elk"`, then add explicit `exitX`/`exitY` connection points.
+- **Edge density**: for nodes with 3+ outgoing edges, reduce duplicates first (for example one gateway → one aggregated backend edge). Then let `routing: "libavoid"` separate what remains — only add explicit `exitX`/`exitY` if a specific edge is still ambiguous after routing.
 - Keep text concise (single purpose per box) and avoid multiline overload.
 - **Animated flow on connectors**: adding `flowAnimation=1;` to any edge style renders a moving dot that travels along the arrow, making directional flow immediately visible without extra labels — ideal for data-flow and pipeline diagrams. The animation is preserved in SVG export and the draw.io desktop app. By default, ask the user whether they want any flow arrows animated before generating the diagram — *"Would you like any of the flow arrows animated to show traffic direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges the user identifies. If the user has already indicated they want a static/clean diagram, skip the question.
 - Prefer a "clean" variant first; add detail only if requested.
 
 For worked examples of common layout problems (stacked edges, repeated labels, observability inside VNet, etc.), see [references/layout-antipatterns.md](references/layout-antipatterns.md).
 
-## Professional Network Topology Patterns (Azure Infrastructure)
+## Cloud Infrastructure Topology (Azure and AWS)
 
-Read [references/topology-patterns.md](references/topology-patterns.md) for all Azure topology guidance — load it for any diagram involving VNets, subnets, or network isolation. It covers VNet/subnet border styles and colours, traffic flow colour palette, resource positioning rules, required annotation boxes, and the Azure topology checklist.
+Vendor-specific topology guidance lives in per-cloud reference files. Load the one that matches the diagram — or both for multi-cloud:
 
-## Professional Network Topology Patterns (AWS Infrastructure)
+- **Azure** — [references/azure.md](references/azure.md): read for any diagram with VNets, subnets, or Azure icons. Covers the azure2 and mscae icon libraries and their caveats, nested VNet → subnet container structure, colour and border conventions, traffic palette, annotation boxes, a complete worked example, and the Azure topology checklist.
+- **AWS** — [references/aws.md](references/aws.md): read for any diagram with VPCs, AZs, or AWS icons. Covers the AWS4 stencil library and its caveats, nested VPC → AZ → subnet container structure, subnet-tier colour coding, NAT/IGW egress paths, security group annotation, a complete worked example, and the AWS topology checklist.
 
-Read [references/topology-patterns.md](references/topology-patterns.md) for all AWS topology guidance — load it for any diagram involving VPCs, subnets, or network isolation. It covers VPC/subnet styles, AZ containers, public/private/isolated subnet colour coding, NAT Gateway egress paths, and the AWS topology checklist.
+Shared rules that apply to both — containment, edge routing, and hard XML constraints — stay in [references/xml-authoring-rules.md](references/xml-authoring-rules.md).
+
 
 ## Sequence and Flow Diagram Patterns
 
@@ -194,17 +186,20 @@ Use this section for diagrams that show **temporal flows** — what happens in o
 ### Layout Approach
 
 **Swimlane interaction flow** (auth / API flows with 2–5 actors):
-- Represent each actor as a labelled header rectangle at the top, with a matching full-height light-coloured background column below it
-- Steps flow top-to-bottom within each column; number them (`1.`, `2.`, `3.`) in the label so execution order is unambiguous
-- All step boxes and edges live at `parent="1"` (root) — no nested swimlane cell geometry required
-- Edges cross between columns with `edgeStyle=orthogonalEdgeStyle;`
-- Canvas: `pageWidth="1400" pageHeight="900"` for 3 actors; add ~420 px width per additional actor
+- Use flat `swimlane` lanes stacked vertically at `parent="1"`, one actor per lane: `swimlane;horizontal=0;startSize=110;fillColor=<pastel>;html=1;` with geometry `x=0, y=lane_index*150, width=CANVAS_W, height=150`
+- Step boxes are children of their lane (`parent="<lane_id>"`) with coordinates relative to the lane: `x = 120 + col*180`, `y = 45`, size `140x60` (`140x80` for decision diamonds). The `x=120` start clears the 110px title area
+- Number steps (`1.`, `2.`, `3.`) in the label so execution order is unambiguous
+- Cross-lane edges must sit at `parent="1"`, not inside a lane, or they are clipped
+- Use `edgeStyle=orthogonalEdgeStyle;` and let the routing pass place the bends
+- Canvas width: `max_col * 180 + 300`; do not nest lanes inside a pool or vary lane heights
+- Canvas height: `actor_count * 150 + 100`
 
 **Horizontal pipeline flowchart** (CI/CD):
 - Stages flow left-to-right: Source → Build → Test → Staging → Approval → Production
 - Use `rounded=1` rectangles for stages, `rhombus` shape for gate / decision points
 - Colour-code each stage box using the Stage Colours table below
 - Failure branch goes downward from the gate with a red edge to a Rollback/Notify step
+- Pass `postLayout: "elk"` with `direction: "horizontal"` — without `direction` the default vertical pass stacks the pipeline top-to-bottom
 - Canvas: `pageWidth="1700" pageHeight="600"`
 
 ### Colour Conventions
@@ -264,46 +259,6 @@ This applies to all shapes — cloud services, network equipment, brand logos, a
 2. If a style string cannot be confirmed, find an alternative via `drawio/search_shapes` before generating.
 3. If a shape renders incorrectly, use `drawio/search_shapes` for an alternative, substitute, and regenerate.
 
-## Azure Icon Caveats (Important)
-
-Azure icons come from **two separate libraries**. `drawio/search_shapes` will return icons from either; use the style string exactly as returned.
-
-### azure2 library (most Azure services)
-
-Path pattern: `image=img/lib/azure2/<category>/<Icon_Name>.svg`
-
-- `shape=mxgraph.azure2.*` may not render in some hosts. Prefer the `image;aspect=fixed;...` style form.
-- Some embedded viewers do not resolve `img/lib/azure2/...` consistently — test in `app.diagrams.net` if icons are missing.
-
-### mscae library (Sentinel, DNS Private Zones, and some older icons)
-
-Path pattern: `image=img/lib/mscae/<Icon_Name>.svg`
-
-- Icons from this library **must include `sketch=0`** in their style. Without it the shape renders with a hand-drawn sketch effect.
-- Correct style prefix: `image;sketch=0;aspect=fixed;html=1;points=[];align=center;...`
-- Common mscae icons: `Azure_Sentinel.svg`, `DNS_Private_Zones.svg`.
-- If `drawio/search_shapes` returns a style containing `sketch=0`, the icon is from mscae — preserve that attribute.
-
-## AWS Icon Caveats (Important)
-
-AWS4 icon rendering in draw.io can fail for two common reasons:
-
-1. **Wrong style approach**
-   - Do **not** use `image=img/lib/aws4/...` — AWS4 icons are **stencils**, not SVG files.
-   - The correct style is: `shape=mxgraph.aws4.<name>;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;`
-   - Fill colour conventions:
-     - Compute (orange): `fillColor=#ED7100`
-     - Storage (green): `fillColor=#3F8624`
-     - Database (blue): `fillColor=#C7131F` (for Aurora/RDS use red)
-     - Networking (purple): `fillColor=#8C4FFF`
-     - Security (red): `fillColor=#DD344C`
-     - Management (orange-red): `fillColor=#E7157B`
-     - General/generic: `fillColor=#232F3E` (AWS dark)
-
-2. **Library/environment mismatch**
-   - Some embedded viewers may not load the `mxgraph.aws4` stencil library.
-   - If shapes do not render in VS Code, test in `app.diagrams.net`.
-
 ## How to Discover Shapes
 
 `drawio/search_shapes` searches all 10,000+ shapes across every draw.io library and returns ready-to-use style strings. Use it for **any** shape that has a name, brand, or product identity — not just cloud providers.
@@ -333,7 +288,12 @@ shape=mxgraph.aws4.<name>;fillColor=<color>;fontColor=#ffffff;strokeColor=none;
 
 # Stencil-based (Cisco, Kubernetes, etc.)
 shape=mxgraph.cisco.<category>.<name>;sketch=0;html=1;
+
+# Icon-service (brand logos and concept icons, returned as an absolute URL)
+shape=image;html=1;verticalLabelPosition=bottom;verticalAlign=top;image=https://<icon-service-host>/<icon>.svg;
 ```
+
+When the built-in libraries have no strong match, `search_shapes` supplements results from the draw.io icon service (the same grouped icon search the editor sidebar uses) and returns them as `shape=image` styles with an absolute URL. These are valid results — use them as returned rather than rejecting them for not matching an `img/lib/...` path.
 
 ## Fallback Strategy if Shapes Still Fail
 
@@ -361,12 +321,11 @@ If any shapes do not render correctly:
 - Run `MCP: Reset Cached Tools` if tool list is stale.
 - **XML comments (`<!-- -->`) are forbidden** — the MCP server rejects them. Remove all comments before submitting.
 - Ensure XML is otherwise well-formed (no malformed tags, no duplicate IDs, no unescaped `<`/`>`/`&` in style strings).
-- **Z-order**: zone background rectangles must be defined **before** the icons they contain, or they will render on top of icons.
+- **Z-order**: when shapes are siblings at `parent="1"`, background rectangles must be defined **before** the icons they sit behind, or they render on top. Using real containers (`swimlane`, `container=1`) avoids the problem entirely — children always render above their parent.
 - **`html=1` in style** is required for any cell whose `value` contains HTML tags (`<b>`, `<br>`, `<i>`). Newlines via `&#xa;` work without it.
 - **`sketch=0` in search results**: if `drawio/search_shapes` returns a style string containing `sketch=0`, preserve it exactly — omitting it enables the hand-drawn sketch rendering mode for that shape.
 - **Icon sizes**: use dimensions as returned by `search_shapes`; they reflect the intended aspect ratio. When normalising a row of icons for visual consistency, 64×64 is a safe common size. Never change the aspect ratio of an icon that has `aspect=fixed` in its style.
-- **Azure**: Verify style uses `image=img/lib/azure2/...` for Azure2 icon mode.
-- **AWS**: Verify style uses `shape=mxgraph.aws4.<name>` for AWS4 icon mode (not `image=img/lib/aws4/...`).
+- **Azure / AWS icon rendering**: vendor-specific style rules and fixes are in [references/azure.md](references/azure.md) and [references/aws.md](references/aws.md).
 - Reopen diagram in web draw.io if VS Code extension rendering differs.
 - If an icon looks wrong, use `drawio/search_shapes` for an alternative exact style string.
 
@@ -380,10 +339,11 @@ See [references/REFERENCE.md](references/REFERENCE.md) for diagram-type prompt p
 - All icon/style strings confirmed via `drawio/search_shapes` before generating; unconfirmed icons are not used.
 - Diagram renders correctly; XML/Mermaid/CSV is valid and opens in draw.io.
 - All named components identifiable via correct icons and clear labels.
-- Layout passes applied appropriately (`postLayout: "elk"` and/or `routing: "libavoid"` for App Server; `routing: "libavoid"` for Tool Server `open_drawio_xml`).
+- Layout pass chosen deliberately (`routing: "libavoid"` for hand-placed/container layouts; `postLayout: "elk"` — with `direction: "horizontal"` for left-to-right flows — for directional diagrams; never both).
 - All applicable topology checklist items passed (borders, subnets, traffic labels, legend, isolation box, zones, canvas size).
 - All applicable sequence/flow checklist items passed (numbered steps, colour-coded edges, error paths, canvas size).
 - Animation preference confirmed; `flowAnimation=1;` applied only to user-identified edges.
-- File artifact saved as `.drawio` (wrapped in `<mxfile>`) if requested.
-- Edge density rules applied: nodes with 3+ edges use distinct exit/entry points; fan-out consolidated; cross-zone edges have waypoints. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md).
+- Nested groupings use real containers: each level a `swimlane`, children parented to their container with relative coordinates, cross-container edges at `parent="1"`.
+- File artifact saved as `.drawio` (wrapped in `<mxfile>`) if requested, following [references/standalone-file-requirements.md](references/standalone-file-requirements.md).
+- Edges declare only `source`/`target`: no hand-written `<Array as="points">` waypoints or `exitX`/`entryX` overrides unless a documented exception applies. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md).
 - Layout anti-patterns checked against [references/layout-antipatterns.md](references/layout-antipatterns.md) before finalising.

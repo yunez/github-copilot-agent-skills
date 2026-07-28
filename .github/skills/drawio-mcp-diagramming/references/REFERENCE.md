@@ -15,9 +15,13 @@ Never guess or fabricate a style string. If `drawio/search_shapes` cannot confir
   - Derived from real diagram review sessions.
   - Use this as the first reference when a diagram looks cluttered or has overlapping lines/labels.
 
-- `topology-patterns.md`
-  - Complete `mxGraphModel` XML examples for Azure (VNet → Subnet → Resource) and AWS (VPC → Public/Private Subnets → ALB/ECS) topology diagrams.
-  - Use when building or debugging a network topology diagram.
+- `azure.md`
+  - Azure icon libraries (azure2, mscae) and their caveats, nested VNet → subnet container structure, colour/border conventions, traffic palette, a complete topology example, and the Azure checklist.
+  - Read for any diagram containing Azure services.
+
+- `aws.md`
+  - AWS4 stencil library and its caveats, nested VPC → AZ → subnet container structure, subnet-tier colour coding, NAT/IGW egress paths, a complete topology example, and the AWS checklist.
+  - Read for any diagram containing AWS services.
 
 - `standalone-file-requirements.md`
   - Required XML attributes when writing a `.drawio` file directly (MCP tool unavailable): `as="geometry"` on every `<mxGeometry>`, and standard `mxGraphModel` layout attributes.
@@ -195,54 +199,6 @@ Use these tools to inspect or edit one page of a multi-page `.drawio` file witho
 
 Use these when the user says "update page 2 of my architecture diagram" or "add a new diagram page to this file".
 
-## Known-Good Azure2 Icon Examples
+## Known-Good Icon Examples
 
-```text
-image=img/lib/azure2/networking/Front_Doors.svg
-image=img/lib/azure2/networking/Private_Link_Hub.svg
-image=img/lib/azure2/networking/Network_Watcher.svg
-image=img/lib/azure2/app_services/API_Management_Services.svg
-image=img/lib/azure2/app_services/App_Services.svg
-image=img/lib/azure2/databases/Azure_Cosmos_DB.svg
-image=img/lib/azure2/identity/Managed_Identities.svg
-image=img/lib/azure2/management_governance/Policy.svg
-image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg
-image=img/lib/azure2/management_governance/Monitor.svg
-image=img/lib/azure2/devops/Application_Insights.svg
-image=img/lib/azure2/devops/API_Connections.svg
-```
-
-## Known-Good AWS4 Icon Examples
-
-AWS4 icons use stencil syntax: `shape=mxgraph.aws4.<name>`. Always confirm the exact style string via `drawio/search_shapes` before use.
-
-```text
-shape=mxgraph.aws4.ec2;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.lambda;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elastic_container_service;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudfront;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.route_53;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.vpc;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.transit_gateway;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.s3;fillColor=#3F8624;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.efs;fillColor=#3F8624;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.rds;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.dynamodb;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elasticache;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.iam;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.key_management_service;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.waf;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cognito;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudwatch;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudformation;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudtrail;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.sqs;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.sns;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.eventbridge;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.api_gateway;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.codepipeline;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-```
-
-> **Note:** Shape names use underscores. If a shape does not render, use `drawio/search_shapes` for an alternative exact style string (e.g. query `"aws api gateway"`).
+Vendor icon examples now live with the rest of the vendor guidance: see `azure.md` for azure2/mscae paths and `aws.md` for AWS4 style strings.

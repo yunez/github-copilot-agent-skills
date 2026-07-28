@@ -25,59 +25,43 @@ Eight issues frequently compound to make lines and labels unreadable:
 
 ### Repeated edge labels
 
-```xml
-<!-- BEFORE (all three labels identical) -->
-<mxCell id="33" value="Route" ... source="hub" target="A">
-<mxCell id="34" value="Route" ... source="hub" target="B">
-<mxCell id="35" value="Route" ... source="hub" target="C">
+Before — all three labels identical:
 
-<!-- AFTER (each label names the specific target) -->
-<mxCell id="33" value="Service A" ... source="hub" target="A">
-<mxCell id="34" value="Service B" ... source="hub" target="B">
-<mxCell id="35" value="Service C" ... source="hub" target="C">
+```xml
+<mxCell id="33" value="Route" edge="1" parent="1" source="hub" target="A"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="34" value="Route" edge="1" parent="1" source="hub" target="B"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="35" value="Route" edge="1" parent="1" source="hub" target="C"><mxGeometry relative="1" as="geometry"/></mxCell>
 ```
 
-### Exit anchor fanning (3+ edges from one node face)
-
-Spread `exitX` values at least 0.15 apart. Use `<Array as="points">` waypoints to route each edge into its own horizontal corridor before they reach targets.
-
-The `x`/`y` attributes on `mxGeometry relative="1"` shift the **label** along the edge path — use this to avoid label stacking when edges share a path segment:
+After — each label names its specific target:
 
 ```xml
-<!-- Three edges leaving the bottom of a hub node, fanned across 0.35 / 0.5 / 0.65 -->
-<mxCell id="33" value="Service A"
-  style="...;exitX=0.35;exitY=1;...;entryX=0.5;entryY=0;..."
-  edge="1" source="hub" target="A" parent="1">
-  <mxGeometry relative="1" x="-0.55" y="-16" as="geometry">
-    <Array as="points"><mxPoint x="WAY_X" y="WAY_Y"/></Array>
-  </mxGeometry>
-</mxCell>
+<mxCell id="33" value="Service A" edge="1" parent="1" source="hub" target="A"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="34" value="Service B" edge="1" parent="1" source="hub" target="B"><mxGeometry relative="1" as="geometry"/></mxCell>
+<mxCell id="35" value="Service C" edge="1" parent="1" source="hub" target="C"><mxGeometry relative="1" as="geometry"/></mxCell>
+```
 
-<mxCell id="34" value="Service B"
-  style="...;exitX=0.5;exitY=1;...;entryX=0.5;entryY=0;..."
-  edge="1" source="hub" target="B" parent="1">
-  <mxGeometry relative="1" x="-0.2" y="-4" as="geometry">
-    <Array as="points"><mxPoint x="WAY_X" y="WAY_Y"/></Array>
-  </mxGeometry>
-</mxCell>
+### Stacked edges from one node face
 
-<mxCell id="35" value="Service C"
-  style="...;exitX=0.65;exitY=1;...;entryX=0.5;entryY=0;..."
-  edge="1" source="hub" target="C" parent="1">
-  <mxGeometry relative="1" x="0.2" y="10" as="geometry">
-    <Array as="points"><mxPoint x="WAY_X" y="WAY_Y"/></Array>
-  </mxGeometry>
+Work through these in order — the first two solve almost every case, and neither adds brittle XML:
+
+1. **Reduce the edges.** Consolidate same-protocol fan-outs into one labelled edge, and cap observability/identity edges (see [xml-authoring-rules.md](xml-authoring-rules.md)).
+2. **Re-run with `routing: "libavoid"`.** It spreads parallel connectors and routes them around shapes, using your existing node positions.
+3. **Offset the labels, not the edges.** The `x`/`y` attributes on `<mxGeometry relative="1">` shift the *label* along the edge path — enough to unstack labels on edges that share a segment:
+
+```xml
+<mxCell id="33" value="Service A" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="hub" target="A">
+  <mxGeometry relative="1" x="-0.55" y="-16" as="geometry"/>
+</mxCell>
+<mxCell id="34" value="Service B" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="hub" target="B">
+  <mxGeometry relative="1" x="-0.2" y="-4" as="geometry"/>
+</mxCell>
+<mxCell id="35" value="Service C" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="hub" target="C">
+  <mxGeometry relative="1" x="0.2" y="10" as="geometry"/>
 </mxCell>
 ```
 
-Same pattern for right-side dashed management/observability edges from a hub node:
-
-```xml
-<!-- Three dashed lines leaving the right face of a hub node -->
-exitX=1, exitY=0.35   → first target   (label offset: x=-0.45, y=-18)
-exitX=1, exitY=0.52   → second target  (label offset: x=-0.15, y=-2)
-exitX=1, exitY=0.68   → third target   (label offset: x=0.25,  y=14)
-```
+Only if all three fail — and the face an edge leaves genuinely carries meaning — fan `exitY` values at least 0.15 apart (`0.35 / 0.5 / 0.65`). Hand-written waypoints remain a last resort; see the documented exceptions in [xml-authoring-rules.md](xml-authoring-rules.md).
 
 ### Observability zone placement
 
@@ -133,11 +117,17 @@ CORRECT layout:
 
 AWS4 icons are stencil-based and must **not** be referenced as SVG image paths.
 
-```xml
-<!-- BAD: AWS4 has no SVG files at img/lib/aws4/ -->
-<mxCell style="image;aspect=fixed;html=1;image=img/lib/aws4/compute/Lambda.svg;"/>
+Bad — AWS4 has no SVG files at `img/lib/aws4/`:
 
-<!-- GOOD: Use stencil shape notation -->
+```xml
+<mxCell style="image;aspect=fixed;html=1;image=img/lib/aws4/compute/Lambda.svg;" vertex="1" parent="1">
+  <mxGeometry x="300" y="400" width="64" height="64" as="geometry"/>
+</mxCell>
+```
+
+Good — stencil shape notation:
+
+```xml
 <mxCell style="shape=mxgraph.aws4.lambda;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;html=1;" vertex="1">
   <mxGeometry x="300" y="400" width="64" height="64" as="geometry"/>
 </mxCell>
@@ -149,12 +139,12 @@ Always confirm the exact AWS4 style string via `drawio/search_shapes` before add
 
 Icons such as the Virtual Network icon (`networking/Virtual_Networks.svg`) used as a visual label companion should be anchored to a fixed corner of their parent container — typically top-right. Without anchoring, draw.io renders them at the computed top-left of the container where they land on top of subnet boxes or service icons.
 
+Anchor to the top-right of the region/VNet container — set `x` to `container_x + container_width - icon_width - 20` for a 20px margin:
+
 ```xml
-<!-- Anchor to top-right of region/VNet container -->
 <mxCell id="8" value="Virtual Network"
   style="image;aspect=fixed;...;image=img/lib/azure2/networking/Virtual_Networks.svg;"
   vertex="1" parent="1">
-  <!-- x = container_x + container_width - icon_width - 20px margin -->
   <mxGeometry x="1360" y="180" width="140" height="90" as="geometry"/>
 </mxCell>
 ```
@@ -163,11 +153,15 @@ Icons such as the Virtual Network icon (`networking/Virtual_Networks.svg`) used 
 
 When generating `mxGraphModel` XML, always emit one `mxCell` per line with child elements indented:
 
-```xml
-<!-- BAD: impossible to patch, xmllint errors point to char 0 -->
-<mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" value="..." style="..." vertex="1" parent="1"><mxGeometry x="30" y="20" width="1940" height="70" as="geometry"/></mxCell>...
+Bad — impossible to patch, and `xmllint` errors all point at char 0:
 
-<!-- GOOD: each element independently patchable -->
+```xml
+<mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" value="Title" style="rounded=1;html=1;" vertex="1" parent="1"><mxGeometry x="30" y="20" width="1940" height="70" as="geometry"/></mxCell>
+```
+
+Good — each element independently patchable:
+
+```xml
 <mxCell id="0"/>
 <mxCell id="1" parent="0"/>
 <mxCell id="2" value="Title" style="..." vertex="1" parent="1">
@@ -207,7 +201,8 @@ Before finalising any diagram, run through these checks:
 - [ ] Labels are readable and not clipped
 - [ ] One icon per major service; no icon-per-step clutter
 - [ ] Edge colours consistently encode meaning (request, response, error, async, token)
-- [ ] Containers/swimlanes clearly group related elements
+- [ ] Containers/swimlanes clearly group related elements, with children parented to their container (not stacked on top of it)
+- [ ] Cross-container edges declared at `parent="1"`
 - [ ] Canvas size fits content without excessive whitespace
 - [ ] Animation (`flowAnimation=1;`) only applied where the user requested it
 - [ ] For topology diagrams: legend and isolation explanation boxes present
