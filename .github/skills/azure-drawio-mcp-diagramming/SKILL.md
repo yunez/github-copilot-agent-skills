@@ -1,37 +1,31 @@
 ---
 name: azure-drawio-mcp-diagramming
-description: Create and edit Azure architecture diagrams using the Draw.io MCP server. Supports the hosted App Server (`drawio/create_diagram`) and the stdio Tool Server (`drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/search_shapes`, etc.) with Azure2 icon rendering guidance. Uses `drawio/search_shapes` for icon discovery.
+description: Create and edit architecture diagrams using Draw.io MCP (`drawio/create_diagram`) with reliable Azure icon rendering guidance and troubleshooting. compatibility Requires Python 3 and internet access to refresh the icon catalog (periodic, not per-run).
 metadata:
   author: Thomas Thornton
-  version: "1.1.0"
-  last-updated: "2026-07-21"
+  version: "1.0.0"
+  last-updated: "2026-05-19"
 ---
 
-# Azure Draw.io MCP Diagramming Skill
+# Draw.io MCP Diagramming Skill
 
-Use this skill to create or update Azure-focused diagrams through the Draw.io MCP server and to avoid common Azure icon rendering problems.
+Use this skill to create or update diagrams through the Draw.io MCP tool and to avoid common Azure icon rendering problems.
 
-See [references/REFERENCE.md](references/REFERENCE.md) for Azure-specific reference artifacts.
+See [references/REFERENCE.md](references/REFERENCE.md) for reference artifacts and refresh commands.
 
-For generic (non-Azure) diagrams, use the `drawio-mcp-diagramming` skill instead.
+For non-Azure diagrams, you can skip icon discovery/validation scripts and proceed directly to `drawio/create_diagram`.
 
 ## When to Use
 
-- The user asks to create or refine Azure architecture diagrams.
+- The user asks to create or refine architecture diagrams.
 - The user wants draw.io/diagrams.net output from an MCP workflow.
-- The user asks for **Mermaid → draw.io** conversion for an Azure diagram.
 - The user needs Azure service icons in diagrams.
 - The user reports that Azure icons/shapes are not appearing.
-- The user wants to **edit an existing multi-page `.drawio` file** (Tool Server only).
 
 ## Required Tooling
 
-This skill works with either Draw.io MCP server variant. Call the tools that match the configured server.
-
-### Option A — Hosted App Server (inline / "Open in draw.io" button)
-
 - MCP tool: `drawio/create_diagram`
-- Workspace MCP config:
+- Workspace MCP config should include a `drawio` server:
 
 ```json
 {
@@ -44,96 +38,22 @@ This skill works with either Draw.io MCP server variant. Call the tools that mat
 }
 ```
 
-Supported inputs: `xml` (draw.io XML), `mermaid` (Mermaid.js text).
-Optional layout passes: `postLayout: "elk"`, `routing: "libavoid"`.
-
-### Option B — stdio Tool Server (opens draw.io in browser)
-
-- MCP tools: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, `drawio/open_drawio_csv`, `drawio/search_shapes`, `drawio/list_pages`, `drawio/get_page`, `drawio/set_page`
-- Workspace MCP config:
-
-```json
-{
-  "servers": {
-    "drawio": {
-      "command": "npx",
-      "args": ["-y", "@drawio/mcp"]
-    }
-  }
-}
-```
-
-Supported inputs: XML, Mermaid, CSV.
-Optional layout pass: `routing: "libavoid"` on `open_drawio_xml`.
-
-> Use **Option A** if your host supports MCP Apps inline rendering (Claude.ai, Cursor ≥ 2.6) or if the "Open in draw.io" button workflow is acceptable. Use **Option B** for VS Code / GitHub Copilot or any standard MCP client.
-
-### Azure icon discovery
-
-- MCP tool: `drawio/search_shapes` — search 10,000+ draw.io shapes and return ready-to-use style strings.
-
-### Tool name detection
-
-MCP hosts may register tools with a server prefix (e.g. `mcp_drawio-mcp-ap_create_diagram` and `mcp_drawio-mcp-ap_search_shapes`). If `tool_search` does not surface the drawio tools, inspect the available or deferred tools list and call the exact names shown there. Do not assume a tool is unavailable if it appears in the deferred list; use the exact registered name.
-
-> XML hard constraints, edge density rules, and VS Code sequential-search guidance are maintained in the generic `drawio-mcp-diagramming` skill's [references/xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md). Apply those rules for all Azure diagram XML.
-
 ## Recommended Workflow
 
-1. **Identify the input format**
-   - For Azure flowcharts, sequence diagrams, or ER diagrams: prefer **Mermaid** if the Tool Server is available.
-   - For precise Azure architecture diagrams with official icons: use **XML**.
-
-2. **Discover Azure icons with `drawio/search_shapes`** — run searches **one at a time** (sequential, not parallel).
-   - Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
-   - Use the returned style string directly in the XML cell.
-
-3. **Before writing edge XML**, apply the edge density rules from [drawio-mcp-diagramming/references/xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md): assign exit/entry points on busy nodes, consolidate fan-outs, add cross-zone waypoints.
-
-4. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see section below):
+1. If diagram uses Azure icons: grep `references/azure2-complete-catalog.txt` to verify icon paths — no scripts needed at runtime.
+2. If diagram is not Azure-specific: skip icon lookup and create diagram directly.
+3. **For Azure infrastructure/network diagrams**: apply Professional Network Topology Patterns (see section below):
    - Use larger canvas (1900x1500)
    - VNets with thick borders (strokeWidth=4)
    - Subnets with dashed borders (strokeWidth=2, dashPattern=8 8)
    - Position resources inside their subnets
    - Label all traffic flows with protocols/ports
    - Include traffic legend and network isolation explanation boxes
-
-5. Build a valid `mxGraphModel` payload — no XML comments, unique IDs, valid edge references. See [xml-authoring-rules.md](../drawio-mcp-diagramming/references/xml-authoring-rules.md).
-
-6. **Call the appropriate tool**
-   - App Server: `drawio/create_diagram` with `xml` or `mermaid`.
-   - Tool Server: `drawio/open_drawio_xml` or `drawio/open_drawio_mermaid`.
-
-7. **Apply layout passes when useful**
-   - App Server: `postLayout: "elk"` for a full re-layout, or `routing: "libavoid"` to tidy connectors while keeping your positions.
-   - Tool Server: `routing: "libavoid"` on `open_drawio_xml`.
-   - Do **not** combine `postLayout` and `routing`.
-
-8. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
-
-9. Prefer one icon per major Azure service; use edges for flow semantics (ingress/egress/peering/telemetry).
-
-## Input Format Quick Reference
-
-| Input | Best for | App Server | Tool Server |
-|---|---|---|---|
-| **XML** | Precise Azure architectures, network topology, custom layouts | `drawio/create_diagram` with `xml` | `drawio/open_drawio_xml` |
-| **Mermaid** | Azure flowcharts, sequence, ER, state diagrams | `drawio/create_diagram` with `mermaid` | `drawio/open_drawio_mermaid` |
-
-### Mermaid
-
-Mermaid is the fastest path for standard Azure diagram types that do not require exact icon placement. The draw.io server parses Mermaid natively and converts it to editable draw.io XML.
-
-- Use Mermaid for flowcharts, sequence diagrams, ER diagrams, and state diagrams.
-- Use XML when the user needs official Azure icons, precise VNet/subnet positioning, or custom styling.
-
-### Multi-page `.drawio` files (Tool Server only)
-
-Use these tools to inspect or edit one page of a multi-page `.drawio` file without rewriting the whole file:
-
-- `drawio/list_pages` — list pages by index, id, name, and approximate size.
-- `drawio/get_page` — retrieve the `mxGraphModel` XML for a single page.
-- `drawio/set_page` — replace a single page's content.
+4. Build a valid `mxGraphModel` payload using verified icons when applicable.
+5. Call `drawio/create_diagram` with the XML.
+6. If user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`.
+7. Keep labels concise and explicit (service name + role).
+8. For Azure diagrams, prefer one icon per major service and use edges for flow semantics (ingress/egress/peering/telemetry).
 
 ## Visual Quality Guardrails
 
@@ -250,18 +170,21 @@ When creating **Azure infrastructure network diagrams** with VNets, subnets, and
 
 This section applies only when the diagram includes Azure services/icons.
 
-1. **Use `drawio/search_shapes`**
-   - Search for the service by name and use the returned style string directly.
-   - Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
-   - This is the upstream-recommended path and covers all 10,000+ shapes.
-
+1. **Use the static catalog** — `references/azure2-complete-catalog.txt` contains all 648 Azure2 icons.
+   - Grep it to find icon paths: `grep -i "gateway" references/azure2-complete-catalog.txt`
+   - No HTTP requests or script execution needed at runtime.
 2. **Hard gate**
-   - If an icon style string cannot be confirmed via `drawio/search_shapes`, do **not** use it.
-   - Find an alternative via `drawio/search_shapes` first.
-
+   - If an icon path cannot be confirmed in the catalog, do **not** use it in `drawio/create_diagram`.
+   - Find an alternative via grep first.
 3. **Render review fallback**
-   - If diagram review shows wrong/missing icon rendering, use `drawio/search_shapes` for alternative style strings.
+   - If diagram review shows wrong/missing icon rendering, grep the catalog for alternative paths.
    - Substitute and regenerate the diagram.
+4. **Refresh catalog** (periodic, human-run — not per diagram):
+
+```bash
+cd .github/skills/drawio-mcp-diagramming/scripts
+python3 search_azure2_icons_github.py --max-results 9999 > ../references/azure2-complete-catalog.txt
+```
 
 ## Azure Icon Caveats (Important)
 
@@ -278,15 +201,17 @@ Azure icon rendering in draw.io can fail for two common reasons:
 
 ## How to Discover Icons
 
-Use `drawio/search_shapes` to find Azure icons and get exact style strings.
+Grep the static catalog — no scripts needed at agent runtime:
 
-- Example queries: `"azure virtual machine"`, `"azure key vault"`, `"azure load balancer"`, `"azure cosmos db"`.
-- Use the returned `style` value directly on the `mxCell`.
+```bash
+grep -i "gateway" references/azure2-complete-catalog.txt
+grep -i "virtual_machine\|load_balancer\|key_vault" references/azure2-complete-catalog.txt
+```
 
-A typical Azure2 image-style result looks like:
+Use verified paths in diagram cell styles:
 
 ```text
-image;aspect=fixed;html=1;points=[];align=center;image=img/lib/azure2/<category>/<Icon_Name>.svg;
+image;aspect=fixed;html=1;...;image=img/lib/azure2/<category>/<Icon_Name>.svg;
 ```
 
 For renderer resilience, absolute URLs also work:
@@ -318,34 +243,19 @@ image=img/lib/azure2/devops/API_Connections.svg
 
 If Azure icons still do not render:
 
-- Do **not** generate the Azure diagram with an unresolved icon set.
-- Use `drawio/search_shapes` to find alternative exact style strings.
+- Do **not** generate the Azure diagram with unresolved icon set.
 - Return the missing icon list and propose verified replacements.
 - After replacements validate to `OK`, then generate the diagram.
 
 ## Troubleshooting Checklist
 
-- Confirm the configured MCP server appears in `MCP: List Servers`.
+- Confirm MCP server appears in `MCP: List Servers`.
 - Run `MCP: Reset Cached Tools` if tool list is stale.
 - Ensure XML is well-formed (no malformed tags or invalid comments).
 - Verify style uses `image=img/lib/azure2/...` for Azure2 icon mode.
 - Reopen diagram in web draw.io if VS Code extension rendering differs.
-- If an icon looks wrong, use `drawio/search_shapes` for an alternative exact style string.
-
-## Pre-Flight Layout Checklist
-
-Before finalising any Azure diagram, run through these checks:
-
-- [ ] No overlapping nodes or labels
-- [ ] No edges passing through unrelated shapes (use `routing: "libavoid"` if needed)
-- [ ] Labels are readable and not clipped
-- [ ] One icon per major Azure service; no icon-per-step clutter
-- [ ] Edge colours consistently encode meaning (HTTPS, HTTP, database, management, blocked)
-- [ ] VNet/subnet containers clearly group related resources
-- [ ] Canvas size fits content without excessive whitespace
-- [ ] Traffic legend box and network isolation explanation box present for topology diagrams
-- [ ] All traffic flows labelled with protocols and ports
-- [ ] Animation (`flowAnimation=1;`) only applied where the user requested it
+- If an icon path looks wrong, grep `references/azure2-complete-catalog.txt` for alternatives.
+- If the catalog itself appears stale, re-run the refresh workflow in REFERENCE.md.
 
 ## Prompt Template for Agents
 
@@ -353,13 +263,12 @@ See [references/REFERENCE.md](references/REFERENCE.md) for full example prompt t
 
 ## Definition of Done
 
-- The correct input format and MCP tool were chosen (XML or Mermaid; App Server or Tool Server).
-- For Azure diagrams: all icon/style strings confirmed via `drawio/search_shapes` before generating.
-- If render issues found, alternative icon style strings sourced via `drawio/search_shapes` and substituted.
-- Diagram generated with confirmed icon paths only.
-- XML/Mermaid is valid and opens in draw.io.
+- For non-Azure diagrams: diagram is generated and renders correctly.
+- For Azure diagrams: all icon paths confirmed against `references/azure2-complete-catalog.txt` before calling `drawio/create_diagram`.
+- If render issues found, alternative icon paths sourced from catalog and substituted.
+- Diagram generated via `drawio/create_diagram` only with confirmed icon paths.
+- XML is valid and opens in draw.io.
 - Azure resources are identifiable (icons and clear service labels).
-- Layout passes applied appropriately (`postLayout: "elk"` and/or `routing: "libavoid"` for App Server; `routing: "libavoid"` for Tool Server `open_drawio_xml`).
 - **For Azure infrastructure/network diagrams**:
   - VNets use thick borders (strokeWidth=4) and are color-coded
   - Subnets use dashed borders (strokeWidth=2, dashPattern=8 8)
