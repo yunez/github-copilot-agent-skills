@@ -1,57 +1,36 @@
-# Draw.io Azure2 & AWS4 References
+# Draw.io MCP Diagramming — Reference Index
 
 This folder contains reference artifacts for the `drawio-mcp-diagramming` skill.
 
-## Files
+## Shape Discovery
 
-- `azure2-complete-catalog.txt`
-  - Complete Azure2 icon inventory (648 icons) from `jgraph/drawio` GitHub tree under `img/lib/azure2`.
-  - Use this as the canonical lookup for Azure icon paths — **no scripts needed at agent runtime**.
-  - Agent usage: `grep -i "keyword" references/azure2-complete-catalog.txt`
+Use `drawio/search_shapes` for any shape with a name, brand, or product identity — cloud services (Azure, AWS, GCP), network equipment (Cisco, Juniper), containers (Kubernetes, Docker), brand logos, IT infrastructure shapes, and more. It covers all 10,000+ draw.io library shapes and returns ready-to-use style strings.
 
-- `aws4-complete-catalog.txt`
-  - Complete AWS4 stencil shape inventory (1,037 shapes) extracted from `jgraph/drawio` stencil XML.
-  - **AWS4 icons are stencil-based** — referenced as `shape=mxgraph.aws4.<name>`, not as SVG files.
-  - Each line in the catalog is a ready-to-use `shape=mxgraph.aws4.*` style string.
-  - Agent usage: `grep -i "keyword" references/aws4-complete-catalog.txt`
-  - Generate/refresh with: `python3 scripts/search_aws4_icons_github.py --max-results 9999 > references/aws4-complete-catalog.txt`
+Never guess or fabricate a style string. If `drawio/search_shapes` cannot confirm a style, find an alternative before generating.
+
+## Reference Files
 
 - `layout-antipatterns.md`
   - Worked examples of layout problems (stacked edges, repeated labels, observability inside VNet/VPC, etc.)
   - Derived from real diagram review sessions.
   - Use this as the first reference when a diagram looks cluttered or has overlapping lines/labels.
 
-- `topology-patterns.md`
-  - Complete `mxGraphModel` XML examples for Azure (VNet → Subnet → Resource) and AWS (VPC → Public/Private Subnets → ALB/ECS) topology diagrams.
-  - Use when building or debugging a network topology diagram.
+- `azure.md`
+  - Azure icon libraries (azure2, mscae) and their caveats, nested VNet → subnet container structure, colour/border conventions, traffic palette, a complete topology example, and the Azure checklist.
+  - Read for any diagram containing Azure services.
+
+- `aws.md`
+  - AWS4 stencil library and its caveats, nested VPC → AZ → subnet container structure, subnet-tier colour coding, NAT/IGW egress paths, a complete topology example, and the AWS checklist.
+  - Read for any diagram containing AWS services.
 
 - `standalone-file-requirements.md`
   - Required XML attributes when writing a `.drawio` file directly (MCP tool unavailable): `as="geometry"` on every `<mxGeometry>`, and standard `mxGraphModel` layout attributes.
   - Includes a full minimal wrapper template.
 
-## Refresh Workflow
-
-Refresh the catalogs when draw.io updates its icon library (not required per-run):
-
-### Azure2 Catalog
-
-```bash
-cd .github/skills/drawio-mcp-diagramming/scripts
-python3 search_azure2_icons_github.py --max-results 9999 > ../references/azure2-complete-catalog.txt
-```
-
-### AWS4 Catalog
-
-```bash
-cd .github/skills/drawio-mcp-diagramming/scripts
-python3 search_aws4_icons_github.py --max-results 9999 > ../references/aws4-complete-catalog.txt
-```
-
 ## Notes
 
-- The catalogs are pre-generated — agents should grep them directly rather than running scripts.
-- If an icon appears missing from a catalog, re-run the relevant refresh workflow above.
-- If render review shows bad/missing icons, grep the catalog for alternative paths and substitute.
+- Always confirm icon style strings via `drawio/search_shapes` before use.
+- If render review shows bad/missing icons, use `drawio/search_shapes` for alternative paths and substitute.
 
 ## Example Prompt Templates
 
@@ -68,11 +47,11 @@ Requirements:
   respective subnets to show network isolation
 - Label all traffic flows with protocols and ports (e.g., HTTPS:443,
   PostgreSQL:5432, HTTP:8080)
-- Add a network isolation explanation box showing the visual conventions
+- Add a network isolation explanation box only when the topology needs the extra explanation
 - Use a larger canvas (1900x1500) to accommodate the multi-VNet topology
-- Color-code different zones (DMZ VNet in yellow, Internal VNet in green,
-  Management zone in blue, VNet Peering in grey, External Services in orange)
-- Show VNet peering connections and external services in separate zones
+- Color-code different zones only when they represent real boundaries (perimeter/ingress in yellow,
+  internal in green, management in blue, VNet peering in grey, external services in orange)
+- Show VNet peering connections and external services in separate zones when they help explain the topology
 - Use Azure2 icons from draw.io MCP
 
 Focus on the networking aspects - how components are isolated, how traffic flows
@@ -133,54 +112,93 @@ Use AWS4 image styles (image=img/lib/aws4/...) for AWS resources.
 Show connectivity, data replication, and identity federation between the clouds.
 ```
 
-## Known-Good Azure2 Icon Examples
+## Diagram-Type Prompt Presets
+
+Use these compact prompts to route the agent to the right input format and conventions.
+
+### Flowchart
 
 ```text
-image=img/lib/azure2/networking/Front_Doors.svg
-image=img/lib/azure2/networking/Private_Link_Hub.svg
-image=img/lib/azure2/networking/Network_Watcher.svg
-image=img/lib/azure2/app_services/API_Management_Services.svg
-image=img/lib/azure2/app_services/App_Services.svg
-image=img/lib/azure2/databases/Azure_Cosmos_DB.svg
-image=img/lib/azure2/identity/Managed_Identities.svg
-image=img/lib/azure2/management_governance/Policy.svg
-image=img/lib/azure2/analytics/Log_Analytics_Workspaces.svg
-image=img/lib/azure2/management_governance/Monitor.svg
-image=img/lib/azure2/devops/Application_Insights.svg
-image=img/lib/azure2/devops/API_Connections.svg
+Create a flowchart showing the decision flow for [process]. Use Mermaid if possible. Keep it left-to-right, label decision diamonds clearly, and use orthogonal edges.
 ```
 
-## Known-Good AWS4 Icon Examples
-
-AWS4 icons use stencil syntax: `shape=mxgraph.aws4.<name>`. Always confirm the exact name against `aws4-complete-catalog.txt` before use.
+### Sequence diagram
 
 ```text
-shape=mxgraph.aws4.ec2;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.lambda;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elastic_container_service;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudfront;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.route_53;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.vpc;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.transit_gateway;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.s3;fillColor=#3F8624;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.efs;fillColor=#3F8624;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.rds;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.dynamodb;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.elasticache;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.iam;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.key_management_service;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.waf;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cognito;fillColor=#DD344C;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudwatch;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudformation;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.cloudtrail;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.sqs;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.sns;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.eventbridge;fillColor=#E7157B;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.api_gateway;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=none;
-shape=mxgraph.aws4.codepipeline;fillColor=#C7131F;fontColor=#ffffff;strokeColor=none;
+Draw a sequence diagram for [interaction]. Show participants [A, B, C], label each message, and use activation bars. Use Mermaid.
 ```
 
-> **Note:** Shape names in the catalog use underscores. If a shape does not render, grep the catalog for partial name matches (e.g. `grep -i "gateway" references/aws4-complete-catalog.txt`).
+### Entity Relationship diagram
+
+```text
+Generate an ER diagram from this SQL/schema: [schema]. Use Mermaid erDiagram syntax. Mark primary keys and foreign-key relationships.
+```
+
+### C4 model
+
+```text
+Create a C4 Container diagram for [system]. Show users, containers, databases, and external systems. Use official C4 shapes and keep the diagram at container scope only.
+```
+
+### Azure network topology
+
+```text
+Create a professional Azure network topology diagram for [description]. Use Azure2 icons, VNets with thick borders, subnets with dashed borders, position resources inside subnets, label traffic with protocols/ports, and include a traffic legend and network isolation explanation box.
+```
+
+### AWS network topology
+
+```text
+Create a professional AWS network topology diagram for [description]. Use AWS4 icons with correct fill colours, VPCs with thick borders, public/private/isolated subnets with dashed borders, and label all traffic flows.
+```
+
+### Cross-functional swimlane
+
+```text
+Create a cross-functional flowchart for [process] with swimlanes for [actors]. Number the steps, show decision points, and use the standard edge colour conventions.
+```
+
+## Input Format Details
+
+### Mermaid
+
+Mermaid is the fastest path for many standard diagram types. The draw.io server parses Mermaid natively and converts it to editable draw.io XML.
+
+- Use Mermaid when the user asks for flowcharts, sequence diagrams, ER diagrams, class diagrams, state diagrams, mind maps, Gantt charts, timelines, or kanban boards.
+- Use XML when the user needs official cloud icons, precise positioning, complex containers, or custom styling.
+
+Example App Server call:
+
+```json
+{
+  "mermaid": "flowchart LR\n  A[Start] --> B{Decision?}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]"
+}
+```
+
+Example Tool Server call:
+
+```json
+{
+  "content": "flowchart LR\n  A[Start] --> B{Decision?}\n  B -->|Yes| C[Do thing]\n  B -->|No| D[Skip]"
+}
+```
+
+> For complex flowcharts (≥ ~20 nodes, ≥ 3 decision diamonds, feedback edges, or ≥ 3 endpoints), the App Server's native Mermaid layout can become cramped. Add `postLayout: "elk"` to re-layout the result. The flow direction is taken from the Mermaid code (`TD/TB` vs `LR/RL`).
+
+### CSV
+
+CSV input is useful for org charts and simple labeled diagrams. The first row is the header; each subsequent row becomes a node. Edge relationships are typically expressed with `id` and `parent` columns. See the Tool Server documentation for the exact CSV schema.
+
+### Multi-page `.drawio` files (Tool Server only)
+
+Use these tools to inspect or edit one page of a multi-page `.drawio` file without rewriting the whole file:
+
+- `drawio/list_pages` — list pages by index, id, name, and approximate size.
+- `drawio/get_page` — retrieve the `mxGraphModel` XML for a single page.
+- `drawio/set_page` — replace a single page's content.
+
+Use these when the user says "update page 2 of my architecture diagram" or "add a new diagram page to this file".
+
+## Known-Good Icon Examples
+
+Vendor icon examples now live with the rest of the vendor guidance: see `azure.md` for azure2/mscae paths and `aws.md` for AWS4 style strings.
