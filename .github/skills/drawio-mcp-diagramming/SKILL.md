@@ -170,7 +170,6 @@ For worked examples of common layout problems (stacked edges, repeated labels, o
 Vendor-specific topology guidance lives in per-cloud reference files. Load the one that matches the diagram — or both for multi-cloud:
 
 - **Azure** — [references/azure.md](references/azure.md): read for any diagram with VNets, subnets, or Azure icons. Covers the azure2 and mscae icon libraries and their caveats, nested VNet → subnet container structure, colour and border conventions, traffic palette, annotation boxes, a complete worked example, and the Azure topology checklist.
-- **Azure enterprise API platform example** — [references/azure-enterprise-api-platform.drawio](references/azure-enterprise-api-platform.drawio): read when you need a worked end-to-end Azure API platform topology with edge, API, app, data, and observability zones.
 - **AWS** — [references/aws.md](references/aws.md): read for any diagram with VPCs, AZs, or AWS icons. Covers the AWS4 stencil library and its caveats, nested VPC → AZ → subnet container structure, subnet-tier colour coding, NAT/IGW egress paths, security group annotation, a complete worked example, and the AWS topology checklist.
 
 Shared rules that apply to both — containment, edge routing, and hard XML constraints — stay in [references/xml-authoring-rules.md](references/xml-authoring-rules.md).

@@ -204,8 +204,8 @@ Keep core workflow in SKILL.md; move detailed docs to `references/`:
 
 ```markdown
 ## Advanced Features
-- **Streaming**: See [references/streaming.md](references/streaming.md) — read when user requests real-time output
-- **Error handling**: See [references/errors.md](references/errors.md) — read when diagnosing failures
+- **Streaming**: See references/streaming.md — read when user requests real-time output
+- **Error handling**: See references/errors.md — read when diagnosing failures
 ```
 
 ### Pattern 2 — Domain-specific organization
@@ -241,7 +241,7 @@ Show core content, reference advanced content:
 [Core instructions here]
 
 ## Advanced: tracked changes
-See [references/redlining.md](references/redlining.md) — read only for tracked-change workflows.
+See references/redlining.md — read only for tracked-change workflows.
 ```
 
 **Key rule:** Keep reference links one level deep from SKILL.md. For files over 100 lines, add a table of contents at the top.
