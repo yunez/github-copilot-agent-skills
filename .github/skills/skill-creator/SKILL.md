@@ -200,13 +200,7 @@ Helps with Azure cost analysis.
 
 ### Pattern 1 — High-level guide with references
 
-Keep core workflow in SKILL.md; move detailed docs to `references/`:
-
-```markdown
-## Advanced Features
-- **Streaming**: See references/streaming.md — read when user requests real-time output
-- **Error handling**: See references/errors.md — read when diagnosing failures
-```
+Keep core workflow in SKILL.md; move detailed docs to `references/`. For each reference file, state exactly when the agent should load it — e.g. "read when the user asks about X" or "read when diagnosing Y".
 
 ### Pattern 2 — Domain-specific organization
 
@@ -234,15 +228,7 @@ apim-deployment/
 
 ### Pattern 3 — Conditional details
 
-Show core content, reference advanced content:
-
-```markdown
-## Basic usage
-[Core instructions here]
-
-## Advanced: tracked changes
-See references/redlining.md — read only for tracked-change workflows.
-```
+Show core content in SKILL.md and load a reference file only when an advanced scenario is triggered. State the load condition inline next to the link.
 
 **Key rule:** Keep reference links one level deep from SKILL.md. For files over 100 lines, add a table of contents at the top.
 
