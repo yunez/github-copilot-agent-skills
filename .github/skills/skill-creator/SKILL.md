@@ -43,6 +43,16 @@ skill-name/
 
 ---
 
+## When to Use
+
+- The user wants to create a new skill ("create a skill", "build a skill", "make a skill for X").
+- The user wants to turn a workflow into a reusable skill ("turn this into a skill", "capture what we just did").
+- The user wants to update or improve an existing SKILL.md.
+- The user asks how to teach Copilot to do something consistently.
+- The user wants to write the description field, plan the folder structure, or design bundled resources for a skill.
+
+---
+
 ## Is a Skill the Right Vehicle?
 
 Not every workflow needs a skill. Before creating one, choose the right tool:
