@@ -38,12 +38,12 @@ Requirements:
   respective subnets to show network isolation
 - Label all traffic flows with protocols and ports (e.g., HTTPS:443,
   PostgreSQL:5432, HTTP:8080)
-- Include a traffic legend showing different traffic types with color-coded arrows
-- Add a network isolation explanation box showing the visual conventions
+- Include a traffic legend only when it improves readability
+- Add a network isolation explanation box only when the topology needs the extra explanation
 - Use a larger canvas (1900x1500) to accommodate the multi-VNet topology
-- Color-code different zones (DMZ VNet in yellow, Internal VNet in green,
-  Management zone in blue, VNet Peering in grey, External Services in orange)
-- Show VNet peering connections and external services in separate zones
+- Color-code different zones only when they represent real boundaries (perimeter/ingress in yellow,
+  internal in green, management in blue, VNet Peering in grey, External Services in orange)
+- Show VNet peering connections and external services in separate zones when they help explain the topology
 - Use Azure2 icons from draw.io MCP
 
 Focus on the networking aspects - how components are isolated, how traffic flows

@@ -80,14 +80,14 @@ Model the hierarchy with real containment, not stacked rectangles — see [xml-a
 
 | Element | Style |
 |---|---|
-| VNet (DMZ) | `swimlane;startSize=24;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=4;` |
+| VNet (Perimeter / Ingress) | `swimlane;startSize=24;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=4;` |
 | VNet (Internal) | `swimlane;startSize=24;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=4;` |
 | VNet (Management) | `swimlane;startSize=24;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=4;` |
 | Subnet | `swimlane;startSize=24;dashed=1;dashPattern=8 8;strokeWidth=2;` in a lighter shade of the parent VNet colour |
 | VNet Peering zone | `swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;` |
 | External Services zone | `swimlane;startSize=24;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;` |
 
-Label subnets with name + CIDR. For delegated subnets add the delegation to the label, e.g. `PostgreSQL Subnet - 10.0.4.0/24 (Delegated to Microsoft.DBforPostgreSQL/flexibleServers)`.
+Label subnets with name + CIDR. For delegated subnets add the delegation to the label, e.g. `PostgreSQL Subnet - 10.0.4.0/24 (Delegated to Microsoft.DBforPostgreSQL/flexibleServers)`. Only use a DMZ/perimeter box when the diagram explicitly models a real perimeter subnet, firewall, or NVA; otherwise keep the edge layer clean and omit it.
 
 Canvas: `pageWidth="1900" pageHeight="1500"` for complex multi-VNet diagrams.
 
@@ -110,8 +110,8 @@ Label every flow with protocol and port.
 
 ## Annotation boxes
 
-1. **Network Isolation Explanation** — top-left, `fillColor=#fff9cc`: VNet/subnet conventions, NSG and Private DNS notes.
-2. **Zone Separation** — VNet Peering zone and External Services zone as distinct containers.
+1. **Network Isolation Explanation** — top-left, `fillColor=#fff9cc`: VNet/subnet conventions, NSG and Private DNS notes. Add it when the topology needs the explanation, not by default.
+2. **Zone Separation** — VNet Peering zone and External Services zone as distinct containers when they add useful separation.
 
 ---
 
@@ -160,8 +160,8 @@ Generate with `routing: "libavoid"` so connectors route around the containers wi
 - [ ] Every resource is parented to its subnet with relative coordinates
 - [ ] Cross-subnet and cross-VNet edges declared at `parent="1"`
 - [ ] Traffic arrows labelled with protocols and ports, using the palette above
-- [ ] Network isolation explanation box included
-- [ ] VNet peering and external services in separate zone containers
+- [ ] Network isolation explanation box included only when it adds clarity
+- [ ] VNet peering and external services in separate zone containers when they help explain the topology
 - [ ] Canvas 1900×1500 for complex infrastructure
 - [ ] `routing: "libavoid"` applied; no hand-written waypoints or exit/entry points
 - [ ] Animation preference confirmed before generating

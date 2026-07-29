@@ -110,28 +110,30 @@ The draw.io MCP server enforces strict XML rules, and the most common quality fa
 
 4. **Nest groupings with real containers, not stacked rectangles** — for any diagram with hierarchy (VNet → Subnet → resource, VPC → AZ → instance, Region → Environment → Service, swimlanes), make each level a `swimlane;startSize=24;` container, set `parent="<container_id>"` on children, and give children coordinates **relative to their parent**. Edges between cells in *different* containers must use `parent="1"` or they render inside the container and get clipped. Drawing a large rectangle and positioning shapes on top of it at absolute coordinates is the anti-pattern the draw.io XML reference explicitly calls out — it breaks move/resize, collapse, and layout passes.
 
-5. **For cloud infrastructure diagrams, load the vendor reference** — read [references/azure.md](references/azure.md) for anything with VNets, subnets, or Azure icons, and [references/aws.md](references/aws.md) for anything with VPCs, AZs, or AWS icons. Read both for multi-cloud diagrams. Each covers that vendor's icon library and caveats, container structure, colour palette, annotation boxes, a complete worked example, and a topology checklist.
+5. **Keep labels unique and sparse** — if several edges say the same thing, collapse them into one labelled flow or a single note box. Do not repeat the same wording in the title, legend, lane name, and callout; each text element should have one job.
 
-6. **Build the payload**
+6. **For cloud infrastructure diagrams, load the vendor reference** — read [references/azure.md](references/azure.md) for anything with VNets, subnets, or Azure icons, and [references/aws.md](references/aws.md) for anything with VPCs, AZs, or AWS icons. Read both for multi-cloud diagrams. Each covers that vendor's icon library and caveats, container structure, colour palette, annotation boxes, a complete worked example, and a topology checklist.
+
+7. **Build the payload**
    - XML: valid `mxGraphModel` using verified icons/style strings.
    - Mermaid: valid Mermaid.js definition (App Server: pass as `mermaid`; Tool Server: use `drawio/open_drawio_mermaid`).
    - CSV: valid CSV content (Tool Server: use `drawio/open_drawio_csv`).
 
-7. **Call the appropriate tool**
+8. **Call the appropriate tool**
    - App Server: `drawio/create_diagram` with `xml` or `mermaid`.
    - Tool Server: `drawio/open_drawio_xml`, `drawio/open_drawio_mermaid`, or `drawio/open_drawio_csv`.
 
-8. **Decide the layout pass before writing XML, then let it route the edges**
+9. **Decide the layout pass before writing XML, then let it route the edges**
    - `routing: "libavoid"` — keeps your hand-placed coordinates and only reroutes connectors around shapes. This is the default for topology, architecture, deployment, and container-based diagrams.
    - `postLayout: "elk"` — full re-layout that replaces your vertex positions. Use for directional/hierarchical XML (pipelines, decision flows). Add `direction: "horizontal"` when the flow reads left-to-right — it defaults to `vertical`, which is why left-to-right CI/CD pipelines come out stacked.
    - Do **not** combine `postLayout` and `routing` — ELK already routes its own edges. `direction` is XML-only and ignored for Mermaid (Mermaid takes direction from `flowchart TD/LR`).
    - Do **not** hand-write `exitX`/`entryX` or `<Array as="points">` waypoints. The routing pass computes them, and manual values fight it. See [references/xml-authoring-rules.md](references/xml-authoring-rules.md) for the narrow exceptions.
 
-9. If the user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`. **Read [references/standalone-file-requirements.md](references/standalone-file-requirements.md) before writing any `.drawio` file by hand** (or whenever the MCP tools are unavailable) — the MCP tools add `as="geometry"` and the `mxGraphModel` layout attributes for you, and without them every element collapses to the origin.
+10. If the user wants a file artifact, save as `.drawio` wrapped in `<mxfile><diagram>...</diagram></mxfile>`. **Read [references/standalone-file-requirements.md](references/standalone-file-requirements.md) before writing any `.drawio` file by hand** (or whenever the MCP tools are unavailable) — the MCP tools add `as="geometry"` and the `mxGraphModel` layout attributes for you, and without them every element collapses to the origin.
 
-10. Keep labels concise and explicit (service name + role).
+11. Keep labels concise and explicit (service name + role).
 
-11. Prefer one icon per major component or service; use edges for flow semantics (ingress/egress/dependency/telemetry).
+12. Prefer one icon per major component or service; use edges for flow semantics (ingress/egress/dependency/telemetry).
 
 ## Input Format Quick Reference
 
@@ -156,6 +158,8 @@ Apply these defaults unless the user explicitly asks for a dense/technical view:
 - Limit cross-lane dashed lines to one security/auth line and one optional telemetry line.
 - **Edge density**: for nodes with 3+ outgoing edges, reduce duplicates first (for example one gateway → one aggregated backend edge). Then let `routing: "libavoid"` separate what remains — only add explicit `exitX`/`exitY` if a specific edge is still ambiguous after routing.
 - Keep text concise (single purpose per box) and avoid multiline overload.
+- Keep edge labels short and unique; if adjacent edges repeat the same protocol/port wording, collapse them or move the shared detail to one annotation box.
+- Avoid repeating the same label in the title, legend, lane name, and callout.
 - **Animated flow on connectors**: adding `flowAnimation=1;` to any edge style renders a moving dot that travels along the arrow, making directional flow immediately visible without extra labels — ideal for data-flow and pipeline diagrams. The animation is preserved in SVG export and the draw.io desktop app. By default, ask the user whether they want any flow arrows animated before generating the diagram — *"Would you like any of the flow arrows animated to show traffic direction? If so, which ones?"* Apply `flowAnimation=1;` only to the edges the user identifies. If the user has already indicated they want a static/clean diagram, skip the question.
 - Prefer a "clean" variant first; add detail only if requested.
 
@@ -166,6 +170,7 @@ For worked examples of common layout problems (stacked edges, repeated labels, o
 Vendor-specific topology guidance lives in per-cloud reference files. Load the one that matches the diagram — or both for multi-cloud:
 
 - **Azure** — [references/azure.md](references/azure.md): read for any diagram with VNets, subnets, or Azure icons. Covers the azure2 and mscae icon libraries and their caveats, nested VNet → subnet container structure, colour and border conventions, traffic palette, annotation boxes, a complete worked example, and the Azure topology checklist.
+- **Azure enterprise API platform example** — [references/azure-enterprise-api-platform.drawio](references/azure-enterprise-api-platform.drawio): read when you need a worked end-to-end Azure API platform topology with edge, API, app, data, and observability zones.
 - **AWS** — [references/aws.md](references/aws.md): read for any diagram with VPCs, AZs, or AWS icons. Covers the AWS4 stencil library and its caveats, nested VPC → AZ → subnet container structure, subnet-tier colour coding, NAT/IGW egress paths, security group annotation, a complete worked example, and the AWS topology checklist.
 
 Shared rules that apply to both — containment, edge routing, and hard XML constraints — stay in [references/xml-authoring-rules.md](references/xml-authoring-rules.md).
