@@ -1,9 +1,0 @@
-{
-  "hediet.vscode-drawio.customLibraries": [
-    {
-      "file": "${workspaceFolder}/diagrams/libraries/azure-official.xml",
-      "libName": "Azure Official Icons",
-      "entryId": "azure-official"
-    }
-  ]
-}
